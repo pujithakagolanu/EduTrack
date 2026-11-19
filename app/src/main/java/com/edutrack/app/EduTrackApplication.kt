@@ -1,0 +1,42 @@
+package com.edutrack.app
+
+import android.app.Application
+import com.edutrack.app.data.SampleData
+import com.edutrack.app.database.AppDatabase
+import com.edutrack.app.repository.StudySessionRepository
+import com.edutrack.app.repository.StudySessionRepositoryImpl
+import com.edutrack.app.repository.SubjectRepository
+import com.edutrack.app.repository.SubjectRepositoryImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+class EduTrackApplication : Application() {
+
+    val database: AppDatabase by lazy {
+        AppDatabase.getDatabase(this)
+    }
+
+    val subjectRepository: SubjectRepository by lazy {
+        SubjectRepositoryImpl(database.subjectDao())
+    }
+
+    val studySessionRepository: StudySessionRepository by lazy {
+        StudySessionRepositoryImpl(database.studySessionDao())
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Seed initial default subjects and study sessions if database is newly initialized
+        val appScope = CoroutineScope(Dispatchers.IO)
+        appScope.launch {
+            val existing = subjectRepository.getAllSubjects().first()
+            if (existing.isEmpty()) {
+                subjectRepository.insertSubjects(SampleData.initialSubjects)
+                studySessionRepository.insertSessions(SampleData.createInitialSessions())
+            }
+        }
+    }
+}
