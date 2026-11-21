@@ -217,7 +217,10 @@ fun EduTrackAppContent(
                                 coroutineScope.launch { drawerState.close() }
                                 if (currentRoute != screen.route) {
                                     navController.navigate(screen.route) {
-                                        popUpTo(Screen.Home.route) { saveState = true }
+                                        popUpTo(Screen.Home.route) {
+                                            saveState = (screen.route != Screen.Home.route)
+                                            inclusive = (screen.route == Screen.Home.route)
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -316,7 +319,8 @@ fun EduTrackAppContent(
                             if (targetRoute != currentRoute) {
                                 navController.navigate(targetRoute) {
                                     popUpTo(Screen.Home.route) {
-                                        saveState = true
+                                        saveState = (targetRoute != Screen.Home.route)
+                                        inclusive = (targetRoute == Screen.Home.route)
                                     }
                                     launchSingleTop = true
                                     restoreState = true
