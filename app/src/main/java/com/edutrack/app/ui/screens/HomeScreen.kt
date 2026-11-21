@@ -173,8 +173,8 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
             // 1. Header: App Title, Nav Hamburger & Current Date
             item(key = "header_title") {
@@ -245,7 +245,7 @@ fun HomeScreen(
             item(key = "quote_card") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isDarkTheme) Color(0xFF1E2838) else AccentBlueLight
                     ),
@@ -254,7 +254,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp)
+                            .padding(20.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -300,21 +300,21 @@ fun HomeScreen(
             item(key = "metric_tiles") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Left Tile: Today's Tasks
                     Card(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onNavigateToSubjects() },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(18.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -355,14 +355,14 @@ fun HomeScreen(
                     // Right Tile: Study Time
                     Card(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(18.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -404,7 +404,11 @@ fun HomeScreen(
 
             // 4. Overall Progress Section
             item(key = "overall_progress") {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -425,7 +429,7 @@ fun HomeScreen(
                                 tint = ProgressPurple,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "$overallProgressPercent %",
                                 style = MaterialTheme.typography.labelMedium.copy(
@@ -436,14 +440,14 @@ fun HomeScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     LinearProgressIndicator(
                         progress = { overallProgressFraction },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
+                            .height(9.dp)
+                            .clip(RoundedCornerShape(5.dp)),
                         color = ProgressPurple,
                         trackColor = ProgressTrack,
                         strokeCap = StrokeCap.Round
@@ -680,7 +684,9 @@ fun HomeScreen(
             // 6. Subject Progress Section
             item(key = "subject_progress_heading") {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

@@ -107,8 +107,8 @@ fun ProgressScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 1. Header: Nav Hamburger & Progress & Insights
             item(key = "header_title") {
