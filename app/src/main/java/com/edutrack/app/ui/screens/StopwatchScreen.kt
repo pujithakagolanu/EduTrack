@@ -20,11 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,9 +53,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.edutrack.app.ui.theme.AccentBlue
 import com.edutrack.app.ui.theme.AccentMint
-import com.edutrack.app.ui.theme.AccentMintLight
+import com.edutrack.app.ui.theme.AccentOrange
 import com.edutrack.app.ui.theme.CoralRed
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
 import kotlinx.coroutines.delay
@@ -65,6 +65,11 @@ data class LapRecord(
     val timeFormatted: String
 )
 
+enum class TimerMode {
+    FOCUS,
+    BREAK
+}
+
 @Composable
 fun StopwatchScreen(
     viewModel: StudyTrackerViewModel,
@@ -73,6 +78,7 @@ fun StopwatchScreen(
 ) {
     val subjects by viewModel.subjects.collectAsState()
     var selectedSubjectId by remember { mutableStateOf<Int?>(null) }
+    var timerMode by remember { mutableStateOf(TimerMode.FOCUS) }
 
     LaunchedEffect(subjects) {
         if (selectedSubjectId == null && subjects.isNotEmpty()) {
@@ -86,7 +92,7 @@ fun StopwatchScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Stopwatch counter (ticks every second when running)
+    // Timer counter: increments in Focus mode, or functions as break stopwatch
     LaunchedEffect(isRunning) {
         while (isRunning) {
             delay(1000L)
@@ -137,7 +143,7 @@ fun StopwatchScreen(
                     Spacer(modifier = Modifier.width(14.dp))
 
                     Text(
-                        text = "Stopwatch",
+                        text = "Timer",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -153,7 +159,9 @@ fun StopwatchScreen(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = if (isRunning) "Active" else "Ready",
+                        text = if (isRunning) {
+                            if (timerMode == TimerMode.FOCUS) "Focusing" else "On Break"
+                        } else "Ready",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isRunning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -161,9 +169,113 @@ fun StopwatchScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Large Circular Stopwatch Display (Adaptive Surface)
+            // Focus & Start Break Mode Toggle Selector
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Focus Mode Button
+                val isFocusActive = timerMode == TimerMode.FOCUS
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (isFocusActive) MaterialTheme.colorScheme.surface else Color.Transparent)
+                        .then(
+                            if (isFocusActive) Modifier.shadow(2.dp, RoundedCornerShape(16.dp))
+                            else Modifier
+                        )
+                        .clickable {
+                            if (timerMode != TimerMode.FOCUS) {
+                                timerMode = TimerMode.FOCUS
+                                isRunning = false
+                                elapsedSeconds = 0
+                                laps.clear()
+                            }
+                        }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SelfImprovement,
+                            contentDescription = "Focus",
+                            tint = if (isFocusActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Focus",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (isFocusActive) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isFocusActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+                }
+
+                // Start Break Button
+                val isBreakActive = timerMode == TimerMode.BREAK
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (isBreakActive) MaterialTheme.colorScheme.surface else Color.Transparent)
+                        .then(
+                            if (isBreakActive) Modifier.shadow(2.dp, RoundedCornerShape(16.dp))
+                            else Modifier
+                        )
+                        .clickable {
+                            if (timerMode != TimerMode.BREAK) {
+                                timerMode = TimerMode.BREAK
+                                isRunning = true // automatically starts the break
+                                elapsedSeconds = 0
+                                laps.clear()
+                            }
+                        }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Coffee,
+                            contentDescription = "Break",
+                            tint = if (isBreakActive) AccentMint else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Start Break",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (isBreakActive) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isBreakActive) AccentMint else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Large Circular Timer Display (Adaptive Surface)
+            val ringBorderColor = if (timerMode == TimerMode.FOCUS) {
+                MaterialTheme.colorScheme.outlineVariant
+            } else {
+                AccentMint.copy(alpha = 0.45f)
+            }
+
             Box(
                 modifier = Modifier
                     .size(280.dp)
@@ -175,7 +287,7 @@ fun StopwatchScreen(
                     )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
-                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                    .border(2.dp, ringBorderColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -188,16 +300,16 @@ fun StopwatchScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "STUDY STOPWATCH",
+                        text = if (timerMode == TimerMode.FOCUS) "FOCUS TIMER" else "BREAK TIMER",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (timerMode == TimerMode.FOCUS) MaterialTheme.colorScheme.onSurfaceVariant else AccentMint,
                         letterSpacing = 1.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Action Controls: Reset/Save | Play/Pause | Lap
             Row(
@@ -211,19 +323,23 @@ fun StopwatchScreen(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .clickable {
-                            if (elapsedSeconds > 0) {
+                            if (elapsedSeconds > 0 && timerMode == TimerMode.FOCUS) {
                                 val currentSubject = subjects.find { it.id == selectedSubjectId } ?: subjects.firstOrNull()
                                 if (currentSubject != null) {
                                     val sessionMinutes = (elapsedSeconds / 60).coerceAtLeast(1)
                                     viewModel.addStudySession(
                                         subjectId = currentSubject.id,
                                         durationMinutes = sessionMinutes,
-                                        notes = "Stopwatch study session: ${currentSubject.name} (${formattedTime})",
+                                        notes = "Focus timer session: ${currentSubject.name} (${formattedTime})",
                                         date = System.currentTimeMillis()
                                     )
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Saved $sessionMinutes min to ${currentSubject.name}!")
                                     }
+                                }
+                            } else if (elapsedSeconds > 0 && timerMode == TimerMode.BREAK) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Break finished: ${formattedTime}")
                                 }
                             }
                             isRunning = false
@@ -241,19 +357,30 @@ fun StopwatchScreen(
                 }
 
                 // Play / Pause Button
+                val playButtonBg = if (timerMode == TimerMode.FOCUS) {
+                    MaterialTheme.colorScheme.tertiaryContainer
+                } else {
+                    AccentMint.copy(alpha = 0.18f)
+                }
+                val playButtonTint = if (timerMode == TimerMode.FOCUS) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    AccentMint
+                }
+
                 Box(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                        .border(1.5.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f), CircleShape)
+                        .background(playButtonBg)
+                        .border(1.5.dp, playButtonTint.copy(alpha = 0.35f), CircleShape)
                         .clickable { isRunning = !isRunning },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isRunning) "Pause" else "Start",
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = playButtonTint,
                         modifier = Modifier.size(34.dp)
                     )
                 }
@@ -280,9 +407,9 @@ fun StopwatchScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Current Study Subject Selector
+            // Current Study Subject Selector (Relevant during Focus)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -295,7 +422,7 @@ fun StopwatchScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = "Current Study Subject",
+                        text = if (timerMode == TimerMode.FOCUS) "Current Study Subject" else "Study Subject (Focus Target)",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
