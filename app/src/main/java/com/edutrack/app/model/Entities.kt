@@ -64,3 +64,54 @@ data class SubjectWithStudyTime(
     val totalMinutes: Int,
     val sessionCount: Int
 )
+
+/**
+ * StudyPlan entity for scheduling and planning upcoming study activities:
+ * - id: Int (Primary Key, auto-generated)
+ * - title: String (e.g. "Review Chapter 4 & Quiz")
+ * - subjectId: Int (Foreign Key referencing Subject with CASCADE delete)
+ * - dateMillis: Long (Epoch ms representing the scheduled calendar date)
+ * - targetMinutes: Int (Planned study time duration)
+ * - isCompleted: Boolean (Status of completion)
+ * - notes: String (Optional details or checklist)
+ */
+@Entity(
+    tableName = "study_plans",
+    foreignKeys = [
+        ForeignKey(
+            entity = Subject::class,
+            parentColumns = ["id"],
+            childColumns = ["subjectId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["subjectId"]),
+        Index(value = ["dateMillis"])
+    ]
+)
+data class StudyPlan(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val title: String,
+    val subjectId: Int,
+    val dateMillis: Long,
+    val targetMinutes: Int = 45,
+    val isCompleted: Boolean = false,
+    val notes: String = ""
+)
+
+/**
+ * StudyPlan with its joined Subject data for rich UI rendering
+ */
+data class StudyPlanWithSubject(
+    val id: Int,
+    val title: String,
+    val subjectId: Int,
+    val subjectName: String,
+    val subjectColor: String,
+    val dateMillis: Long,
+    val targetMinutes: Int,
+    val isCompleted: Boolean,
+    val notes: String
+)

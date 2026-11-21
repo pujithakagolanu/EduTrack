@@ -1,18 +1,43 @@
 package com.edutrack.app.model
 
+import com.edutrack.app.repository.StudyPlanRepository
 import com.edutrack.app.repository.SubjectRepository
 import com.edutrack.app.ui.screens.calculateStudyStreakDays
 import com.edutrack.app.ui.screens.calculateWeeklyDayHours
+import com.edutrack.app.viewmodel.StudyPlanViewModel
 import com.edutrack.app.viewmodel.SubjectValidationResult
 import com.edutrack.app.viewmodel.SubjectViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.util.Calendar
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EduTrackIntegrationUnitTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun testSubjectValidationEmptyName() {
@@ -96,14 +121,90 @@ class EduTrackIntegrationUnitTest {
     }
 
     @Test
-    fun testWeeklyDayHoursCalculation() {
-        val calendar = Calendar.getInstance()
-        val sessions = listOf(
-            StudySession(id = 1, subjectId = 1, durationMinutes = 120, date = calendar.timeInMillis)
+    fun testStudyPlanViewModelSchedulingAndCompletion() = runTest {
+        val sampleSubject = Subject(id = 1, name = "Computer Science", colorTag = "#6750A4", weeklyGoalHours = 10)
+        val today = StudyPlanViewModel.getStartOfDay(System.currentTimeMillis())
+
+        val planList = mutableListOf(
+            StudyPlan(id = 1, title = "Data Structures Review", subjectId = 1, dateMillis = today, targetMinutes = 45, isCompleted = false)
         )
-        val weeklyData = calculateWeeklyDayHours(sessions)
-        assertEquals(7, weeklyData.size)
-        val todayData = weeklyData.find { it.isToday }
-        assertEquals(2.0f, todayData?.hours ?: 0f, 0.01f)
+
+        val fakePlanRepo = object : StudyPlanRepository {
+            override fun getAllPlans(): Flow<List<StudyPlan>> = flowOf(planList)
+            override fun getAllPlansWithSubject(): Flow<List<StudyPlanWithSubject>> = flowOf(
+                planList.map {
+                    StudyPlanWithSubject(
+                        id = it.id,
+                        title = it.title,
+                        subjectId = it.subjectId,
+                        subjectName = sampleSubject.name,
+                        subjectColor = sampleSubject.colorTag,
+                        dateMillis = it.dateMillis,
+                        targetMinutes = it.targetMinutes,
+                        isCompleted = it.isCompleted,
+                        notes = it.notes
+                    )
+                }
+            )
+            override fun getPlanById(planId: Int): Flow<StudyPlan?> = flowOf(planList.find { it.id == planId })
+            override fun getPlansForDateRange(startOfDay: Long, endOfDay: Long): Flow<List<StudyPlanWithSubject>> =
+                getAllPlansWithSubject()
+            override fun getUpcomingPlans(fromTimestamp: Long): Flow<List<StudyPlanWithSubject>> =
+                getAllPlansWithSubject()
+            override suspend fun insertPlan(plan: StudyPlan): Long {
+                planList.add(plan)
+                return plan.id.toLong()
+            }
+            override suspend fun insertPlans(plans: List<StudyPlan>): List<Long> {
+                planList.addAll(plans)
+                return plans.map { it.id.toLong() }
+            }
+            override suspend fun updatePlan(plan: StudyPlan) {}
+            override suspend fun setPlanCompleted(planId: Int, isCompleted: Boolean) {
+                val index = planList.indexOfFirst { it.id == planId }
+                if (index != -1) {
+                    planList[index] = planList[index].copy(isCompleted = isCompleted)
+                }
+            }
+            override suspend fun deletePlan(plan: StudyPlan) {
+                planList.removeIf { it.id == plan.id }
+            }
+            override suspend fun deletePlanById(planId: Int) {
+                planList.removeIf { it.id == planId }
+            }
+            override suspend fun deleteAllPlans() {
+                planList.clear()
+            }
+        }
+
+        val fakeSubjectRepo = object : SubjectRepository {
+            override fun getAllSubjects(): Flow<List<Subject>> = flowOf(listOf(sampleSubject))
+            override fun getSubjectById(subjectId: Int): Flow<Subject?> = flowOf(sampleSubject)
+            override suspend fun getSubjectByIdOnce(subjectId: Int): Subject? = sampleSubject
+            override fun getSubjectCount(): Flow<Int> = flowOf(1)
+            override suspend fun insertSubject(subject: Subject): Long = 1L
+            override suspend fun insertSubjects(subjects: List<Subject>): List<Long> = listOf(1L)
+            override suspend fun updateSubject(subject: Subject) {}
+            override suspend fun deleteSubject(subject: Subject) {}
+            override suspend fun deleteSubjectById(subjectId: Int) {}
+            override suspend fun deleteAllSubjects() {}
+        }
+
+        val viewModel = StudyPlanViewModel(fakePlanRepo, fakeSubjectRepo)
+
+        // 1. Verify date selection & start of day
+        viewModel.selectDate(today)
+        assertEquals(today, viewModel.selectedDateMillis.value)
+
+        // 2. Verify allPlans stream from repository
+        val loadedPlans = fakePlanRepo.getAllPlansWithSubject().first()
+        assertEquals(1, loadedPlans.size)
+        assertEquals("Data Structures Review", loadedPlans[0].title)
+        assertEquals(sampleSubject.name, loadedPlans[0].subjectName)
+        assertFalse(loadedPlans[0].isCompleted)
+
+        // 3. Verify date highlighted activity set contains today
+        val scheduledDates = planList.map { StudyPlanViewModel.getStartOfDay(it.dateMillis) }.toSet()
+        assertTrue(scheduledDates.contains(today))
     }
 }

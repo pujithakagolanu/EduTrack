@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.History
@@ -70,6 +71,7 @@ import com.edutrack.app.ui.screens.AddSessionScreen
 import com.edutrack.app.ui.screens.EditSessionScreen
 import com.edutrack.app.ui.screens.HistoryScreen
 import com.edutrack.app.ui.screens.HomeScreen
+import com.edutrack.app.ui.screens.PlannerScreen
 import com.edutrack.app.ui.screens.ProgressScreen
 import com.edutrack.app.ui.screens.SessionDetailScreen
 import com.edutrack.app.ui.screens.StopwatchScreen
@@ -80,6 +82,8 @@ import com.edutrack.app.ui.theme.SmartBg
 import com.edutrack.app.ui.theme.SmartSurface
 import com.edutrack.app.ui.theme.TextDark
 import com.edutrack.app.ui.theme.TextMuted
+import com.edutrack.app.viewmodel.StudyPlanViewModel
+import com.edutrack.app.viewmodel.StudyPlanViewModelFactory
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
 import com.edutrack.app.viewmodel.SubjectViewModel
 import com.edutrack.app.viewmodel.SubjectViewModelFactory
@@ -105,6 +109,14 @@ fun EduTrackAppContent(
         factory = SubjectViewModelFactory(
             subjectRepository = application.subjectRepository,
             sessionRepository = application.studySessionRepository
+        )
+    )
+
+    // Dedicated StudyPlanViewModel with factory for Study Planner
+    val studyPlanViewModel: StudyPlanViewModel = viewModel(
+        factory = StudyPlanViewModelFactory(
+            planRepository = application.studyPlanRepository,
+            subjectRepository = application.subjectRepository
         )
     )
 
@@ -250,6 +262,18 @@ fun EduTrackAppContent(
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
 
+                    NavigationDrawerItem(
+                        label = { Text("Plan Study Activity") },
+                        icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Plan") },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Planner.route)
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -326,6 +350,7 @@ fun EduTrackAppContent(
                         viewModel = studyTrackerViewModel,
                         onNavigateToAddSession = { navController.navigate(Screen.AddSession.route) },
                         onNavigateToSubjects = { navController.navigate(Screen.Tasks.route) },
+                        onNavigateToPlanner = { navController.navigate(Screen.Planner.route) },
                         onNavigateToHistory = { navController.navigate(Screen.History.route) },
                         onNavigateToSessionDetail = { sessionId ->
                             navController.navigate(Screen.SessionDetail.createRoute(sessionId))
@@ -350,6 +375,15 @@ fun EduTrackAppContent(
                 composable(Screen.Stopwatch.route) {
                     StopwatchScreen(
                         viewModel = studyTrackerViewModel,
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        }
+                    )
+                }
+
+                composable(Screen.Planner.route) {
+                    PlannerScreen(
+                        viewModel = studyPlanViewModel,
                         onOpenDrawer = {
                             coroutineScope.launch { drawerState.open() }
                         }

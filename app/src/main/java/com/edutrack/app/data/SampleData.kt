@@ -1,7 +1,9 @@
 package com.edutrack.app.data
 
+import com.edutrack.app.model.StudyPlan
 import com.edutrack.app.model.StudySession
 import com.edutrack.app.model.Subject
+import java.util.Calendar
 
 object SampleData {
     val initialSubjects = listOf(
@@ -61,4 +63,59 @@ object SampleData {
             notes = "Implemented DAO methods with reactive Flows and Repository abstraction layer."
         )
     )
+
+    fun createInitialPlans(currentTimeMs: Long = System.currentTimeMillis()): List<StudyPlan> {
+        val cal = Calendar.getInstance().apply { timeInMillis = currentTimeMs }
+
+        fun getTimeForDayOffset(offsetDays: Int, hour: Int = 10): Long {
+            val c = Calendar.getInstance().apply {
+                timeInMillis = currentTimeMs
+                add(Calendar.DAY_OF_YEAR, offsetDays)
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            return c.timeInMillis
+        }
+
+        return listOf(
+            StudyPlan(
+                id = 1,
+                title = "Compose Navigation & Animations Deep Dive",
+                subjectId = 1,
+                dateMillis = getTimeForDayOffset(0, 14),
+                targetMinutes = 60,
+                isCompleted = false,
+                notes = "Implement transition specs and test backstack retention."
+            ),
+            StudyPlan(
+                id = 2,
+                title = "Dynamic Programming & Memoization Exercises",
+                subjectId = 2,
+                dateMillis = getTimeForDayOffset(1, 10),
+                targetMinutes = 90,
+                isCompleted = false,
+                notes = "Solve 0/1 Knapsack and Longest Common Subsequence."
+            ),
+            StudyPlan(
+                id = 3,
+                title = "SQL Index Optimization & Query Profiling",
+                subjectId = 3,
+                dateMillis = getTimeForDayOffset(2, 16),
+                targetMinutes = 45,
+                isCompleted = false,
+                notes = "Analyze B-tree vs hash index trade-offs."
+            ),
+            StudyPlan(
+                id = 4,
+                title = "Usability Heuristics & Material 3 Review",
+                subjectId = 4,
+                dateMillis = getTimeForDayOffset(4, 11),
+                targetMinutes = 50,
+                isCompleted = false,
+                notes = "Review Nielsen Norman group heuristics and color contrast."
+            )
+        )
+    }
 }

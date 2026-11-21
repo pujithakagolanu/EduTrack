@@ -4,12 +4,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Timer
@@ -48,7 +50,15 @@ sealed class Screen(
         unselectedIcon = Icons.Outlined.Timer
     )
 
-    // 4. Archive / History (Recorded study session history & archive)
+    // 4. Planner / Study Schedule (Monthly calendar & study planner)
+    data object Planner : Screen(
+        route = "planner",
+        title = "Planner",
+        selectedIcon = Icons.Filled.CalendarMonth,
+        unselectedIcon = Icons.Outlined.CalendarMonth
+    )
+
+    // 5. Archive / History (Recorded study session history & archive)
     data object History : Screen(
         route = "history",
         title = "Archive",
@@ -69,6 +79,11 @@ sealed class Screen(
         title = "Add Study Session"
     )
 
+    data object AddPlan : Screen(
+        route = "add_plan",
+        title = "Plan Study Activity"
+    )
+
     data object SessionDetail : Screen(
         route = "session_detail/{sessionId}",
         title = "Session Detail"
@@ -84,6 +99,6 @@ sealed class Screen(
     }
 
     companion object {
-        val bottomNavItems = listOf(Home, Tasks, Stopwatch, History, Progress)
+        val bottomNavItems = listOf(Home, Tasks, Stopwatch, Planner, History, Progress)
     }
 }

@@ -73,6 +73,7 @@ fun HomeScreen(
     viewModel: StudyTrackerViewModel,
     onNavigateToAddSession: () -> Unit,
     onNavigateToSubjects: () -> Unit,
+    onNavigateToPlanner: () -> Unit = {},
     onNavigateToHistory: () -> Unit,
     onNavigateToSessionDetail: (Int) -> Unit,
     onOpenDrawer: () -> Unit = {},
@@ -400,18 +401,35 @@ fun HomeScreen(
 
             // 5. Today's Tasks / Today's Sessions Container
             item(key = "todays_tasks_heading") {
-                Text(
-                    text = "Today's Tasks",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Today's Tasks",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                     )
-                )
+
+                    Text(
+                        text = "Planner 📅",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = AccentBlue,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.clickable { onNavigateToPlanner() }
+                    )
+                }
             }
 
             item(key = "todays_tasks_card") {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToPlanner() },
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)

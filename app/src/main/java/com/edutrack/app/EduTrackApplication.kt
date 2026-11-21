@@ -3,6 +3,8 @@ package com.edutrack.app
 import android.app.Application
 import com.edutrack.app.data.SampleData
 import com.edutrack.app.database.AppDatabase
+import com.edutrack.app.repository.StudyPlanRepository
+import com.edutrack.app.repository.StudyPlanRepositoryImpl
 import com.edutrack.app.repository.StudySessionRepository
 import com.edutrack.app.repository.StudySessionRepositoryImpl
 import com.edutrack.app.repository.SubjectRepository
@@ -26,6 +28,10 @@ class EduTrackApplication : Application() {
         StudySessionRepositoryImpl(database.studySessionDao())
     }
 
+    val studyPlanRepository: StudyPlanRepository by lazy {
+        StudyPlanRepositoryImpl(database.studyPlanDao())
+    }
+
     override fun onCreate() {
         super.onCreate()
 
@@ -34,8 +40,9 @@ class EduTrackApplication : Application() {
         appScope.launch {
             val existing = subjectRepository.getAllSubjects().first()
             if (existing.isEmpty()) {
-                subjectRepository.insertSubjects(SampleData.initialSubjects)
+                val insertedIds = subjectRepository.insertSubjects(SampleData.initialSubjects)
                 studySessionRepository.insertSessions(SampleData.createInitialSessions())
+                studyPlanRepository.insertPlans(SampleData.createInitialPlans())
             }
         }
     }
