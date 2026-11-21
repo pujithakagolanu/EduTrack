@@ -24,10 +24,16 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -97,6 +103,42 @@ fun HomeScreen(
         ((totalWeeklyHours / totalWeeklyGoalHours) * 100).toInt().coerceIn(0, 100)
     } else 0
     val overallProgressFraction = (overallProgressPercent / 100f).coerceIn(0f, 1f)
+
+    val currentStreak = remember(sessions) {
+        calculateStudyStreakDays(sessions)
+    }
+
+    val badges = remember(currentStreak) {
+        listOf(
+            AchievementBadge(
+                id = "streak_3",
+                title = "3-Day Streak",
+                targetDays = 3,
+                description = "Consistent learner",
+                unlocked = currentStreak >= 3,
+                accentColor = Color(0xFFF59E0B),
+                icon = Icons.Default.LocalFireDepartment
+            ),
+            AchievementBadge(
+                id = "streak_7",
+                title = "7-Day Streak",
+                targetDays = 7,
+                description = "Weekly dedication",
+                unlocked = currentStreak >= 7,
+                accentColor = Color(0xFF10B981),
+                icon = Icons.Default.MilitaryTech
+            ),
+            AchievementBadge(
+                id = "streak_30",
+                title = "30-Day Streak",
+                targetDays = 30,
+                description = "Master of discipline",
+                unlocked = currentStreak >= 30,
+                accentColor = Color(0xFF8B5CF6),
+                icon = Icons.Default.WorkspacePremium
+            )
+        )
+    }
 
     Scaffold(
         floatingActionButton = {
@@ -459,6 +501,169 @@ fun HomeScreen(
                 }
             }
 
+            // 6. Streak & Achievements Section
+            item(key = "streak_achievements_heading") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Streak",
+                            tint = AccentOrange,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Study Streak & Badges",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AccentOrange.copy(alpha = 0.15f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "$currentStreak Days 🔥",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = AccentOrange
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Streak Progress Summary Card
+            item(key = "streak_summary_card") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (currentStreak > 0) "Active Streak: $currentStreak consecutive days!" else "Start your study streak today!",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Log study sessions daily to unlock milestone badges",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Badges Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            badges.forEach { badge ->
+                                val progressFraction = (currentStreak.toFloat() / badge.targetDays).coerceIn(0f, 1f)
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (badge.unlocked) {
+                                            badge.accentColor.copy(alpha = 0.12f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        }
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (badge.unlocked) badge.accentColor.copy(alpha = 0.2f)
+                                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = if (badge.unlocked) badge.icon else Icons.Default.Lock,
+                                                contentDescription = badge.title,
+                                                tint = if (badge.unlocked) badge.accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = badge.title,
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (badge.unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+
+                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Text(
+                                            text = if (badge.unlocked) "Unlocked 🏆" else "${badge.targetDays} days",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (badge.unlocked) badge.accentColor else MaterialTheme.colorScheme.outline
+                                            )
+                                        )
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        LinearProgressIndicator(
+                                            progress = { progressFraction },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(4.dp)
+                                                .clip(RoundedCornerShape(2.dp)),
+                                            color = badge.accentColor,
+                                            trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                            strokeCap = StrokeCap.Round
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // 6. Subject Progress Section
             item(key = "subject_progress_heading") {
                 Row(
@@ -503,3 +708,13 @@ fun HomeScreen(
         }
     }
 }
+
+data class AchievementBadge(
+    val id: String,
+    val title: String,
+    val targetDays: Int,
+    val description: String,
+    val unlocked: Boolean,
+    val accentColor: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
