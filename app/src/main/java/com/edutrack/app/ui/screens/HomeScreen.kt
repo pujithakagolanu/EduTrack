@@ -247,7 +247,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isDarkTheme) Color(0xFF1E2838) else AccentBlueLight
+                        containerColor = if (isDarkTheme) MaterialTheme.colorScheme.surfaceVariant else AccentBlueLight
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
@@ -260,13 +260,13 @@ fun HomeScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(AccentBlue.copy(alpha = 0.2f)),
+                                .background(if (isDarkTheme) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else AccentBlue.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FormatQuote,
                                 contentDescription = "Quote",
-                                tint = AccentBlue,
+                                tint = if (isDarkTheme) MaterialTheme.colorScheme.primary else AccentBlue,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -278,7 +278,7 @@ fun HomeScreen(
                                 text = "Success is not final, failure is not fatal: It is the courage to continue that counts.",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isDarkTheme) Color(0xFFF1F4F9) else MaterialTheme.colorScheme.onSurface,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     lineHeight = 20.sp
                                 )
                             )
@@ -286,7 +286,7 @@ fun HomeScreen(
                             Text(
                                 text = "— Winston Churchill",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = if (isDarkTheme) Color(0xFF9CA3AF) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 modifier = Modifier.align(Alignment.End)
