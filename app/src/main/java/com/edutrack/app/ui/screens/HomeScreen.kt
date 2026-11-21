@@ -81,6 +81,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: StudyTrackerViewModel,
+    userName: String = "",
     onNavigateToAddSession: () -> Unit,
     onNavigateToSubjects: () -> Unit,
     onNavigateToPlanner: () -> Unit = {},
@@ -203,12 +204,13 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(14.dp))
 
                         Column {
+                            val greetingText = if (userName.isNotBlank()) "Hi, $userName" else "EduTrack"
                             Text(
-                                text = "EduTrack",
+                                text = greetingText,
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = 26.sp
+                                    fontSize = 24.sp
                                 )
                             )
                             Spacer(modifier = Modifier.height(2.dp))

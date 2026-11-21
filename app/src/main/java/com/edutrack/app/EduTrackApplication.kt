@@ -2,7 +2,10 @@ package com.edutrack.app
 
 import android.app.Application
 import com.edutrack.app.data.SampleData
+import com.edutrack.app.data.UserSessionManager
 import com.edutrack.app.database.AppDatabase
+import com.edutrack.app.repository.AuthRepository
+import com.edutrack.app.repository.AuthRepositoryImpl
 import com.edutrack.app.repository.StudyPlanRepository
 import com.edutrack.app.repository.StudyPlanRepositoryImpl
 import com.edutrack.app.repository.StudySessionRepository
@@ -18,6 +21,14 @@ class EduTrackApplication : Application() {
 
     val database: AppDatabase by lazy {
         AppDatabase.getDatabase(this)
+    }
+
+    val userSessionManager: UserSessionManager by lazy {
+        UserSessionManager(this)
+    }
+
+    val authRepository: AuthRepository by lazy {
+        AuthRepositoryImpl(database.userDao(), userSessionManager)
     }
 
     val subjectRepository: SubjectRepository by lazy {

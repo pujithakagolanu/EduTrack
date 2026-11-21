@@ -7,14 +7,14 @@ import androidx.room.RoomDatabase
 import com.edutrack.app.model.StudyPlan
 import com.edutrack.app.model.StudySession
 import com.edutrack.app.model.Subject
+import com.edutrack.app.model.User
 
 /**
- * AppDatabase provides the Room database for EduTrack with entities Subject, StudySession & StudyPlan.
- * It enforces referential integrity through foreign keys and provides a thread-safe singleton.
+ * AppDatabase provides the Room database for EduTrack with entities Subject, StudySession, StudyPlan & User.
  */
 @Database(
-    entities = [Subject::class, StudySession::class, StudyPlan::class],
-    version = 4,
+    entities = [Subject::class, StudySession::class, StudyPlan::class, User::class],
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -22,6 +22,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun subjectDao(): SubjectDao
     abstract fun studySessionDao(): StudySessionDao
     abstract fun studyPlanDao(): StudyPlanDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -36,7 +37,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    // Enable foreign key constraints in SQLite
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

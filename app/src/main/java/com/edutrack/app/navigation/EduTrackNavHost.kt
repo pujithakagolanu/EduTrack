@@ -31,9 +31,11 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Divider
@@ -68,6 +70,7 @@ import androidx.navigation.navArgument
 import com.edutrack.app.EduTrackApplication
 import com.edutrack.app.ui.components.EduTrackBottomBar
 import com.edutrack.app.ui.screens.AddSessionScreen
+import com.edutrack.app.ui.screens.AuthScreen
 import com.edutrack.app.ui.screens.EditSessionScreen
 import com.edutrack.app.ui.screens.HistoryScreen
 import com.edutrack.app.ui.screens.HomeScreen
@@ -82,11 +85,14 @@ import com.edutrack.app.ui.theme.SmartBg
 import com.edutrack.app.ui.theme.SmartSurface
 import com.edutrack.app.ui.theme.TextDark
 import com.edutrack.app.ui.theme.TextMuted
+import com.edutrack.app.viewmodel.AuthViewModel
+import com.edutrack.app.viewmodel.AuthViewModelFactory
 import com.edutrack.app.viewmodel.StudyPlanViewModel
 import com.edutrack.app.viewmodel.StudyPlanViewModelFactory
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
 import com.edutrack.app.viewmodel.SubjectViewModel
 import com.edutrack.app.viewmodel.SubjectViewModelFactory
+import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
 @Composable
@@ -103,6 +109,13 @@ fun EduTrackAppContent(
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+
+    // Dedicated AuthViewModel for Sign In / Sign Up
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(application.authRepository)
+    )
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val currentUserName by authViewModel.currentUserName.collectAsState()
 
     // Dedicated SubjectViewModel with factory for Subject Manager
     val subjectViewModel: SubjectViewModel = viewModel(
@@ -164,14 +177,14 @@ fun EduTrackAppContent(
 
                         Column {
                             Text(
-                                text = "EduTrack",
+                                text = if (isLoggedIn && currentUserName.isNotBlank()) "Hi, $currentUserName" else "EduTrack",
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             )
                             Text(
-                                text = "Study Progress Tracker",
+                                text = if (isLoggedIn) "Student Account" else "Study Progress Tracker",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -306,6 +319,59 @@ fun EduTrackAppContent(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "ACCOUNT",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
+                    )
+
+                    if (isLoggedIn) {
+                        NavigationDrawerItem(
+                            label = { Text("Log Out ($currentUserName)") },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.ExitToApp,
+                                    contentDescription = "Log Out"
+                                )
+                            },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                authViewModel.logout()
+                                navController.navigate(Screen.Auth.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                }
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    } else {
+                        NavigationDrawerItem(
+                            label = { Text("Log In / Sign Up") },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Log In"
+                                )
+                            },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Auth.route)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -334,7 +400,7 @@ fun EduTrackAppContent(
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = Screen.Home.route,
+                startDestination = if (isLoggedIn) Screen.Home.route else Screen.Auth.route,
                 modifier = Modifier.padding(innerPadding),
                 enterTransition = {
                     fadeIn(animationSpec = tween(280))
@@ -352,6 +418,7 @@ fun EduTrackAppContent(
                 composable(Screen.Home.route) {
                     HomeScreen(
                         viewModel = studyTrackerViewModel,
+                        userName = currentUserName,
                         onNavigateToAddSession = { navController.navigate(Screen.AddSession.route) },
                         onNavigateToSubjects = { navController.navigate(Screen.Tasks.route) },
                         onNavigateToPlanner = { navController.navigate(Screen.Planner.route) },
@@ -509,6 +576,31 @@ fun EduTrackAppContent(
                         sessionId = sessionId,
                         viewModel = studyTrackerViewModel,
                         onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = Screen.Auth.route,
+                    enterTransition = {
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                            animationSpec = tween(320)
+                        ) + fadeIn(animationSpec = tween(320))
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                            animationSpec = tween(280)
+                        ) + fadeOut(animationSpec = tween(280))
+                    }
+                ) {
+                    AuthScreen(
+                        authViewModel = authViewModel,
+                        onAuthSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }

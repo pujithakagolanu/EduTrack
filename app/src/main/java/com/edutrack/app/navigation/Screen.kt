@@ -74,6 +74,11 @@ sealed class Screen(
     )
 
     // Sub-screens
+    data object Auth : Screen(
+        route = "auth",
+        title = "Sign In"
+    )
+
     data object AddSession : Screen(
         route = "add_session",
         title = "Add Study Session"
