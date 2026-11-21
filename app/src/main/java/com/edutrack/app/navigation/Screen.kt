@@ -68,7 +68,7 @@ sealed class Screen(
 
     data object Progress : Screen(
         route = "progress",
-        title = "Progress",
+        title = "Insights",
         selectedIcon = Icons.Filled.Assessment,
         unselectedIcon = Icons.Outlined.Assessment
     )

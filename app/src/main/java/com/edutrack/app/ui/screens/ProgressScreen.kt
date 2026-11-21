@@ -1,11 +1,14 @@
 package com.edutrack.app.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,20 +20,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -43,8 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,15 +60,15 @@ import androidx.compose.ui.unit.sp
 import com.edutrack.app.model.StudySession
 import com.edutrack.app.model.Subject
 import com.edutrack.app.ui.theme.AccentBlue
-import com.edutrack.app.ui.theme.AccentBlueLight
 import com.edutrack.app.ui.theme.AccentMint
 import com.edutrack.app.ui.theme.AccentOrange
 import com.edutrack.app.ui.theme.AccentPurple
-import com.edutrack.app.ui.theme.CoralRed
 import com.edutrack.app.ui.theme.ProgressPurple
 import com.edutrack.app.ui.theme.ProgressTrack
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 data class DailyBarData(
@@ -69,6 +76,21 @@ data class DailyBarData(
     val minutes: Int
 )
 
+data class DailyChartPoint(
+    val dayLabel: String,
+    val dateLabel: String,
+    val minutes: Int,
+    val isToday: Boolean
+)
+
+data class SubjectShare(
+    val subject: Subject,
+    val totalMinutes: Int,
+    val percentage: Float,
+    val color: Color
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProgressScreen(
     viewModel: StudyTrackerViewModel,
@@ -92,12 +114,66 @@ fun ProgressScreen(
     val completedWeeklyHours = weeklyStudyMinutes / 60f
     val taskCompletionPercent = ((completedWeeklyHours / totalGoalHours) * 100).toInt().coerceIn(0, 100)
 
-    // Daily breakdown for Sat, Sun, Mon, Tue, Wed, Thu, Fri (matching screenshot labels)
-    val dailyBars = remember(sessions) {
-        calculateDailyBars(sessions)
+    // Daily Line Graph Points: 7 days for Week view, 14 days for Month view
+    val chartPoints = remember(sessions, isWeekView) {
+        val daysCount = if (isWeekView) 7 else 14
+        val cal = Calendar.getInstance()
+        val todayYear = cal.get(Calendar.YEAR)
+        val todayDoy = cal.get(Calendar.DAY_OF_YEAR)
+
+        (daysCount - 1 downTo 0).map { offset ->
+            val targetCal = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -offset)
+            }
+            val targetYear = targetCal.get(Calendar.YEAR)
+            val targetDoy = targetCal.get(Calendar.DAY_OF_YEAR)
+
+            val shortDay = targetCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.ENGLISH) ?: ""
+            val dayOfMonth = targetCal.get(Calendar.DAY_OF_MONTH)
+
+            val dayMinutes = sessions.filter { session ->
+                cal.timeInMillis = session.date
+                cal.get(Calendar.DAY_OF_YEAR) == targetDoy && cal.get(Calendar.YEAR) == targetYear
+            }.sumOf { it.durationMinutes }
+
+            DailyChartPoint(
+                dayLabel = shortDay,
+                dateLabel = "$dayOfMonth",
+                minutes = dayMinutes,
+                isToday = (targetYear == todayYear && targetDoy == todayDoy)
+            )
+        }
     }
 
-    val maxDailyMinutes = (dailyBars.maxOfOrNull { it.minutes } ?: 0).coerceAtLeast(80)
+    // Subject Distribution breakdown: Calculate totals, percentage, and colors
+    val subjectShares = remember(subjects, sessions) {
+        val totalRecordedMinutes = sessions.sumOf { it.durationMinutes }.coerceAtLeast(0)
+        val defaultColors = listOf(
+            Color(0xFF3B82F6), // Blue
+            Color(0xFF10B981), // Emerald
+            Color(0xFFF59E0B), // Amber
+            Color(0xFF8B5CF6), // Purple
+            Color(0xFFEC4899), // Pink
+            Color(0xFF06B6D4)  // Cyan
+        )
+
+        subjects.mapIndexed { index, subject ->
+            val minutes = sessions.filter { it.subjectId == subject.id }.sumOf { it.durationMinutes }
+            val pct = if (totalRecordedMinutes > 0) (minutes.toFloat() / totalRecordedMinutes) * 100f else 0f
+            val color = runCatching {
+                Color(android.graphics.Color.parseColor(subject.colorTag))
+            }.getOrElse { defaultColors[index % defaultColors.size] }
+
+            SubjectShare(
+                subject = subject,
+                totalMinutes = minutes,
+                percentage = pct,
+                color = color
+            )
+        }
+    }
+
+    val totalDistributionMinutes = subjectShares.sumOf { it.totalMinutes }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -110,7 +186,7 @@ fun ProgressScreen(
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 1. Header: Nav Hamburger & Progress & Insights
+            // 1. Header: Nav Hamburger & "Insights" Title
             item(key = "header_title") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -134,14 +210,24 @@ fun ProgressScreen(
 
                     Spacer(modifier = Modifier.width(14.dp))
 
-                    Text(
-                        text = "Progress & Insights",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 26.sp
+                    Column {
+                        Text(
+                            text = "Insights",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 26.sp
+                            )
                         )
-                    )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Study metrics & distribution overview",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                    }
                 }
             }
 
@@ -214,7 +300,7 @@ fun ProgressScreen(
                                 Icon(
                                     imageVector = Icons.Default.Schedule,
                                     contentDescription = "Study Time",
-                                    tint = AccentBlue,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -247,8 +333,8 @@ fun ProgressScreen(
                 }
             }
 
-            // 3. Study Activity Chart Card (with Week / Month Toggle Pill)
-            item(key = "study_activity_card") {
+            // 3. Study Activity Line Graph with Dates & Connected Dots
+            item(key = "study_activity_line_graph") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -260,7 +346,7 @@ fun ProgressScreen(
                             .fillMaxWidth()
                             .padding(20.dp)
                     ) {
-                        // Header with Week / Month Toggle
+                        // Header with Title & Week/Month Selector
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -270,7 +356,7 @@ fun ProgressScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                                     contentDescription = "Activity",
-                                    tint = AccentPurple,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -283,7 +369,7 @@ fun ProgressScreen(
                                 )
                             }
 
-                            // Week / Month Pill Selector
+                            // Week / Month Toggle Pill
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(14.dp))
@@ -301,7 +387,7 @@ fun ProgressScreen(
                                     Text(
                                         text = "Week",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (isWeekView) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = if (isWeekView) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     )
@@ -318,7 +404,7 @@ fun ProgressScreen(
                                     Text(
                                         text = "Month",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (!isWeekView) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = if (!isWeekView) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     )
@@ -326,62 +412,129 @@ fun ProgressScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        // Bar Chart Display: Left Y-Axis labels (80m, 60m, 40m, 20m, 0m) + Rounded Bars
-                        Row(
+                        // Line Graph Canvas with Dates and Connected Dots
+                        val maxMinutes = (chartPoints.maxOfOrNull { it.minutes } ?: 0).coerceAtLeast(60)
+                        val lineColor = MaterialTheme.colorScheme.primary
+                        val dotFillColor = MaterialTheme.colorScheme.surface
+                        val gridLineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                        val activeDotColor = AccentOrange
+
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp)
+                                .height(190.dp)
                         ) {
-                            // Y-Axis
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .padding(end = 12.dp),
-                                verticalArrangement = Arrangement.SpaceBetween,
-                                horizontalAlignment = Alignment.End
-                            ) {
-                                Text("80m", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("60m", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("40m", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("20m", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("0m", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val width = size.width
+                                val height = size.height - 35.dp.toPx() // Reserve space at bottom for date labels
+                                val pointSpacing = if (chartPoints.size > 1) width / (chartPoints.size - 1) else width
+
+                                // Draw horizontal reference grid lines
+                                val gridSteps = 3
+                                for (i in 0..gridSteps) {
+                                    val y = height * (i.toFloat() / gridSteps)
+                                    drawLine(
+                                        color = gridLineColor,
+                                        start = Offset(0f, y),
+                                        end = Offset(width, y),
+                                        strokeWidth = 1.dp.toPx()
+                                    )
+                                }
+
+                                // Calculate coordinates for each point
+                                val points = chartPoints.mapIndexed { index, point ->
+                                    val x = index * pointSpacing
+                                    val fraction = (point.minutes.toFloat() / maxMinutes).coerceIn(0f, 1f)
+                                    val y = height - (fraction * (height - 15.dp.toPx()))
+                                    Offset(x, y)
+                                }
+
+                                // Draw soft gradient fill under the curve
+                                if (points.isNotEmpty()) {
+                                    val fillPath = Path().apply {
+                                        moveTo(points.first().x, height)
+                                        points.forEach { lineTo(it.x, it.y) }
+                                        lineTo(points.last().x, height)
+                                        close()
+                                    }
+                                    drawPath(
+                                        path = fillPath,
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(
+                                                lineColor.copy(alpha = 0.28f),
+                                                lineColor.copy(alpha = 0.02f)
+                                            ),
+                                            startY = 0f,
+                                            endY = height
+                                        )
+                                    )
+                                }
+
+                                // Draw continuous connecting line
+                                if (points.size > 1) {
+                                    val strokePath = Path().apply {
+                                        moveTo(points.first().x, points.first().y)
+                                        for (i in 1 until points.size) {
+                                            lineTo(points[i].x, points[i].y)
+                                        }
+                                    }
+                                    drawPath(
+                                        path = strokePath,
+                                        color = lineColor,
+                                        style = Stroke(
+                                            width = 3.dp.toPx(),
+                                            cap = StrokeCap.Round,
+                                            join = StrokeJoin.Round
+                                        )
+                                    )
+                                }
+
+                                // Draw connected dots and outer halos
+                                points.forEachIndexed { index, point ->
+                                    val isPointToday = chartPoints[index].isToday
+                                    val hasActivity = chartPoints[index].minutes > 0
+                                    val currentDotColor = if (isPointToday) activeDotColor else lineColor
+
+                                    // Outer ring
+                                    drawCircle(
+                                        color = currentDotColor,
+                                        radius = if (isPointToday) 6.dp.toPx() else 4.5.dp.toPx(),
+                                        center = point
+                                    )
+                                    // Inner contrasting center
+                                    drawCircle(
+                                        color = if (hasActivity) dotFillColor else currentDotColor,
+                                        radius = if (isPointToday) 3.5.dp.toPx() else 2.5.dp.toPx(),
+                                        center = point
+                                    )
+                                }
                             }
 
-                            // Bars for Sat Sun Mon Tue Wed Thu Fri
+                            // Dates & Day Labels below the line graph
                             Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Bottom
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomCenter),
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                dailyBars.forEach { day ->
-                                    val barFraction = if (maxDailyMinutes > 0) {
-                                        (day.minutes.toFloat() / maxDailyMinutes).coerceIn(0.04f, 1f)
-                                    } else 0.04f
-
+                                chartPoints.forEach { point ->
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Bottom,
-                                        modifier = Modifier.fillMaxHeight()
+                                        modifier = Modifier.width(if (chartPoints.size > 7) 20.dp else 36.dp)
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(22.dp)
-                                                .fillMaxHeight(barFraction)
-                                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                                .background(AccentPurple)
-                                        )
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
                                         Text(
-                                            text = day.dayLabel,
+                                            text = point.dayLabel.take(1),
+                                            fontSize = 10.sp,
+                                            fontWeight = if (point.isToday) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (point.isToday) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = point.dateLabel,
                                             fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = if (point.isToday) FontWeight.Bold else FontWeight.SemiBold,
+                                            color = if (point.isToday) AccentOrange else MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 }
@@ -391,8 +544,8 @@ fun ProgressScreen(
                 }
             }
 
-            // 4. Subject Breakdown Card
-            item(key = "subject_breakdown_card") {
+            // 4. Subject Distribution: Color Ring / Pie Chart & Color Dots Legend with Percentages
+            item(key = "subject_distribution_card") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
@@ -404,16 +557,17 @@ fun ProgressScreen(
                             .fillMaxWidth()
                             .padding(20.dp)
                     ) {
+                        // Header
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Breakdown",
+                                imageVector = Icons.Default.PieChart,
+                                contentDescription = "Distribution",
                                 tint = AccentOrange,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Subject Breakdown",
+                                text = "Subject Distribution",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -421,75 +575,118 @@ fun ProgressScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
                         if (subjects.isEmpty()) {
                             Text(
-                                text = "No subjects found.",
+                                text = "No subjects enrolled yet.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                subjects.forEach { subject ->
-                                    val subjectMinutes = sessions
-                                        .filter { it.subjectId == subject.id }
-                                        .sumOf { it.durationMinutes }
-                                    val subHours = subjectMinutes / 60
-                                    val subMin = subjectMinutes % 60
-                                    val timeFormatted = "${subHours}h ${subMin}m"
+                            // Circular Color Ring / Pie Chart
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(22.dp)
+                            ) {
+                                // Dynamic Pie / Color Ring Canvas
+                                Box(
+                                    modifier = Modifier.size(130.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Canvas(modifier = Modifier.size(120.dp)) {
+                                        val strokeWidth = 18.dp.toPx()
 
-                                    val goalMinutes = (subject.weeklyGoalHours * 60).coerceAtLeast(1)
-                                    val progressFraction = (subjectMinutes.toFloat() / goalMinutes).coerceIn(0f, 1f)
+                                        if (totalDistributionMinutes <= 0) {
+                                            // Empty state track ring
+                                            drawArc(
+                                                color = Color.LightGray.copy(alpha = 0.35f),
+                                                startAngle = -90f,
+                                                sweepAngle = 360f,
+                                                useCenter = false,
+                                                style = Stroke(width = strokeWidth)
+                                            )
+                                        } else {
+                                            var currentStartAngle = -90f
+                                            subjectShares.forEach { share ->
+                                                val sweepAngle = (share.percentage / 100f) * 360f
+                                                if (sweepAngle > 0f) {
+                                                    drawArc(
+                                                        color = share.color,
+                                                        startAngle = currentStartAngle,
+                                                        sweepAngle = sweepAngle,
+                                                        useCenter = false,
+                                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                                                    )
+                                                    currentStartAngle += sweepAngle
+                                                }
+                                            }
+                                        }
+                                    }
 
-                                    val subjectColor = runCatching {
-                                        Color(android.graphics.Color.parseColor(subject.colorTag))
-                                    }.getOrDefault(AccentBlue)
+                                    // Center Total Text inside the Ring
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = if (totalDistributionMinutes > 0) "${totalDistributionMinutes}m" else "0m",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        )
+                                        Text(
+                                            text = "Logged",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 10.sp
+                                            )
+                                        )
+                                    }
+                                }
 
-                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                // Legend with Subject Name, Color Dot & Percentage
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    subjectShares.forEach { share ->
                                         Row(
+                                            verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            // Subject Name in pill
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(subjectColor.copy(alpha = 0.15f))
-                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
                                             ) {
+                                                // Colored Indicator Dot
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .clip(CircleShape)
+                                                        .background(share.color)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
-                                                    text = subject.name,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = subjectColor,
+                                                    text = share.subject.name,
+                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    ),
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                             }
 
+                                            // Percentage Tag
                                             Text(
-                                                text = timeFormatted,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface
+                                                text = String.format(Locale.getDefault(), "%.1f%%", share.percentage),
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = share.color
+                                                )
                                             )
                                         }
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        // Horizontal bar
-                                        LinearProgressIndicator(
-                                            progress = { progressFraction },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(6.dp)
-                                                .clip(RoundedCornerShape(3.dp)),
-                                            color = subjectColor,
-                                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            strokeCap = StrokeCap.Round
-                                        )
                                     }
                                 }
                             }
