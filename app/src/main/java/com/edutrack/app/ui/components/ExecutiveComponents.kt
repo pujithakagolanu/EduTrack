@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.edutrack.app.model.StudySession
 import com.edutrack.app.model.Subject
 import com.edutrack.app.navigation.Screen
@@ -150,8 +151,10 @@ fun EduTrackBottomBar(
                 label = {
                     Text(
                         text = screen.title,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(

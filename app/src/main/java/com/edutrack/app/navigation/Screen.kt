@@ -45,7 +45,7 @@ sealed class Screen(
 
     data object Stopwatch : Screen(
         route = "stopwatch",
-        title = "Stopwatch",
+        title = "Timer",
         selectedIcon = Icons.Filled.Timer,
         unselectedIcon = Icons.Outlined.Timer
     )
