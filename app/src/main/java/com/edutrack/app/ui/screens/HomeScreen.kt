@@ -71,6 +71,7 @@ import com.edutrack.app.ui.theme.TextLight
 import com.edutrack.app.ui.theme.TextMuted
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -108,36 +109,25 @@ fun HomeScreen(
         calculateStudyStreakDays(sessions)
     }
 
-    val badges = remember(currentStreak) {
-        listOf(
-            AchievementBadge(
-                id = "streak_3",
-                title = "3-Day Streak",
-                targetDays = 3,
-                description = "Consistent learner",
-                unlocked = currentStreak >= 3,
-                accentColor = Color(0xFFF59E0B),
-                icon = Icons.Default.LocalFireDepartment
-            ),
-            AchievementBadge(
-                id = "streak_7",
-                title = "7-Day Streak",
-                targetDays = 7,
-                description = "Weekly dedication",
-                unlocked = currentStreak >= 7,
-                accentColor = Color(0xFF10B981),
-                icon = Icons.Default.MilitaryTech
-            ),
-            AchievementBadge(
-                id = "streak_30",
-                title = "30-Day Streak",
-                targetDays = 30,
-                description = "Master of discipline",
-                unlocked = currentStreak >= 30,
-                accentColor = Color(0xFF8B5CF6),
-                icon = Icons.Default.WorkspacePremium
-            )
-        )
+    // Day-wise last 7 days history for fire streak
+    val dayWiseStreakHistory = remember(sessions) {
+        val cal = Calendar.getInstance()
+        val sessionDays = sessions.map { session ->
+            val sCal = Calendar.getInstance().apply { timeInMillis = session.date }
+            "${sCal.get(Calendar.YEAR)}_${sCal.get(Calendar.DAY_OF_YEAR)}"
+        }.toSet()
+
+        // 7 days ending today
+        (6 downTo 0).map { dayOffset ->
+            val dayCal = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -dayOffset)
+            }
+            val key = "${dayCal.get(Calendar.YEAR)}_${dayCal.get(Calendar.DAY_OF_YEAR)}"
+            val dayName = dayCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault()) ?: ""
+            val hasStudied = sessionDays.contains(key)
+            val isToday = dayOffset == 0
+            StreakDayStatus(dayLabel = dayName, hasStudied = hasStudied, isToday = isToday)
+        }
     }
 
     Scaffold(
@@ -501,7 +491,7 @@ fun HomeScreen(
                 }
             }
 
-            // 6. Streak & Achievements Section
+            // 6. Day-Wise Fire Streak & Milestone Tracker
             item(key = "streak_achievements_heading") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -513,11 +503,11 @@ fun HomeScreen(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = "Streak",
                             tint = AccentOrange,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Study Streak & Badges",
+                            text = "Study Streak",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -529,7 +519,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
                             .background(AccentOrange.copy(alpha = 0.15f))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "$currentStreak Days 🔥",
@@ -546,7 +536,7 @@ fun HomeScreen(
             item(key = "streak_summary_card") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
@@ -555,105 +545,147 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(18.dp)
                     ) {
+                        Text(
+                            text = if (currentStreak > 0) "🔥 $currentStreak days consecutive streak!" else "Start your study fire streak today!",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Daily study activity keeps your flame burning bright.",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Day-Wise Fire Streak Row (Weekly 7-day flame history)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column {
-                                Text(
-                                    text = if (currentStreak > 0) "Active Streak: $currentStreak consecutive days!" else "Start your study streak today!",
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                            dayWiseStreakHistory.forEach { dayStatus ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (dayStatus.hasStudied) AccentOrange.copy(alpha = 0.18f)
+                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                            .border(
+                                                width = if (dayStatus.isToday) 1.5.dp else 0.dp,
+                                                color = if (dayStatus.isToday) AccentOrange else Color.Transparent,
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (dayStatus.hasStudied) {
+                                            Icon(
+                                                imageVector = Icons.Default.LocalFireDepartment,
+                                                contentDescription = "Active day",
+                                                tint = AccentOrange,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.outlineVariant)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Text(
+                                        text = dayStatus.dayLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (dayStatus.isToday) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (dayStatus.isToday) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     )
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Log study sessions daily to unlock milestone badges",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // Badges Row
+                        // Milestone Goals (3-Day, 7-Day, 30-Day streak targets)
+                        val streakMilestones = listOf(
+                            Triple("3-Day", 3, Color(0xFFF59E0B)),
+                            Triple("7-Day", 7, Color(0xFF10B981)),
+                            Triple("30-Day", 30, Color(0xFF8B5CF6))
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            badges.forEach { badge ->
-                                val progressFraction = (currentStreak.toFloat() / badge.targetDays).coerceIn(0f, 1f)
+                            streakMilestones.forEach { (label, target, accent) ->
+                                val isReached = currentStreak >= target
+                                val fraction = (currentStreak.toFloat() / target).coerceIn(0f, 1f)
+
                                 Card(
                                     modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = if (badge.unlocked) {
-                                            badge.accentColor.copy(alpha = 0.12f)
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                        }
+                                        containerColor = if (isReached) accent.copy(alpha = 0.12f)
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                                     ),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
+                                            .padding(10.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .clip(CircleShape)
-                                                .background(
-                                                    if (badge.unlocked) badge.accentColor.copy(alpha = 0.2f)
-                                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
-                                                imageVector = if (badge.unlocked) badge.icon else Icons.Default.Lock,
-                                                contentDescription = badge.title,
-                                                tint = if (badge.unlocked) badge.accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp)
+                                                imageVector = Icons.Default.LocalFireDepartment,
+                                                contentDescription = null,
+                                                tint = if (isReached) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isReached) accent else MaterialTheme.colorScheme.onSurface
+                                                )
                                             )
                                         }
 
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Spacer(modifier = Modifier.height(4.dp))
 
                                         Text(
-                                            text = badge.title,
-                                            style = MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (badge.unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                                            ),
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                        )
-
-                                        Spacer(modifier = Modifier.height(2.dp))
-
-                                        Text(
-                                            text = if (badge.unlocked) "Unlocked 🏆" else "${badge.targetDays} days",
+                                            text = if (isReached) "Completed 🔥" else "$currentStreak / $target days",
                                             style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (badge.unlocked) badge.accentColor else MaterialTheme.colorScheme.outline
+                                                fontWeight = FontWeight.Medium,
+                                                color = if (isReached) accent else MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         )
 
                                         Spacer(modifier = Modifier.height(6.dp))
 
                                         LinearProgressIndicator(
-                                            progress = { progressFraction },
+                                            progress = { fraction },
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .height(4.dp)
                                                 .clip(RoundedCornerShape(2.dp)),
-                                            color = badge.accentColor,
-                                            trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                            color = accent,
+                                            trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
                                             strokeCap = StrokeCap.Round
                                         )
                                     }
@@ -709,12 +741,8 @@ fun HomeScreen(
     }
 }
 
-data class AchievementBadge(
-    val id: String,
-    val title: String,
-    val targetDays: Int,
-    val description: String,
-    val unlocked: Boolean,
-    val accentColor: Color,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
+data class StreakDayStatus(
+    val dayLabel: String,
+    val hasStudied: Boolean,
+    val isToday: Boolean
 )
