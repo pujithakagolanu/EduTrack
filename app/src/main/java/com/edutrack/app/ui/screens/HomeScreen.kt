@@ -431,67 +431,7 @@ fun HomeScreen(
                 }
             }
 
-            // 5. Today's Tasks / Today's Sessions Container
-            item(key = "todays_tasks_heading") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Today's Tasks",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    )
-
-                    Text(
-                        text = "Planner 📅",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = AccentBlue,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.clickable { onNavigateToPlanner() }
-                    )
-                }
-            }
-
-            item(key = "todays_tasks_card") {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToPlanner() },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = if (todayMinutes == 0) "No tasks for today!" else "$todayMinutes minutes logged today! 🚀",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (todayMinutes == 0) "Enjoy your free time 🎉" else "Keep up the momentum and reach your goal!",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                }
-            }
-
-            // 6. Day-Wise Fire Streak & Milestone Tracker
+            // 5. Day-Wise Fire Streak & Milestone Tracker
             item(key = "streak_achievements_heading") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
