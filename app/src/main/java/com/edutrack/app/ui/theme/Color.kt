@@ -3,64 +3,81 @@ package com.edutrack.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ==========================================
-// EduTrack Theme Color System (Luxury Light & Dark Mode)
+// EduTrack Theme Color System
+// Burgundy + Antique Gold (Classic Luxury & Academic Heritage)
 // ==========================================
 
-// Light Mode Surfaces (Rich warm alabaster / porcelain luxury palette)
-val LightBg = Color(0xFFF6F8FC)
-val LightSurface = Color(0xFFFFFFFF)
-val LightCardBg = Color(0xFFFFFFFF)
+// User Specified Core Heritage Colors
+val BurgundyPrimary = Color(0xFF481C2B)       // Primary
+val BurgundySecondary = Color(0xFF702F40)     // Secondary
+val AntiqueGold = Color(0xFFC2A16B)           // Accent
+val HeritageLightBg = Color(0xFFFAF7F3)       // Background
+val HeritageLightSurface = Color(0xFFF1E6DC)  // Surface
 
-// Dark Mode Surfaces (Deep sleek obsidian & charcoal)
-val DarkBg = Color(0xFF0F1117)
-val DarkSurface = Color(0xFF181B24)
-val DarkCardBg = Color(0xFF222634)
-val DarkBorderSubtle = Color(0xFF2B3042)
+// Light Mode Surfaces & Cards
+val LightBg = HeritageLightBg
+val LightSurface = Color(0xFFFFFFFF)          // Crisp inner cards on surface
+val LightCardBg = Color(0xFFFFFFFF)
+val LightSurfaceElevated = HeritageLightSurface
+
+// Dark Mode Surfaces (Deep Velvet Wine, Rich Night & Obsidian)
+val DarkBg = Color(0xFF160E12)                // Deep velvety midnight wine
+val DarkSurface = Color(0xFF23161C)           // Rich burgundy charcoal surface
+val DarkCardBg = Color(0xFF2E1C25)            // Elevated burgundy card
+val DarkBorderSubtle = Color(0xFF3F2733)      // Subtle warm dark border
 
 // Backward compatibility aliases
 val SmartBg = LightBg
 val SmartSurface = LightSurface
 val SmartCardBg = LightCardBg
 
-// Accent Pill & Status Colors (Refined jewel tones)
-val CoralRed = Color(0xFFE11D48)
-val CoralRedLight = Color(0xFFFFF1F2)
+// Brand Accents
+val AccentGold = AntiqueGold
+val AccentGoldLight = Color(0xFFF7F1E5)
+val AccentGoldDark = Color(0xFFDFBF88)
+val AccentGoldDarkContainer = Color(0xFF3D311F)
 
-val AccentBlue = Color(0xFF2563EB)
-val AccentBlueLight = Color(0xFFEFF6FF)
-val AccentBlueDarkContainer = Color(0xFF1E3A8A)
+val AccentBurgundyLight = Color(0xFFF5EBF0)
+val AccentBurgundyDarkContainer = Color(0xFF3B1723)
 
-val AccentMint = Color(0xFF059669)
-val AccentMintLight = Color(0xFFECFDF5)
-val AccentMintDarkContainer = Color(0xFF064E3B)
+val CoralRed = Color(0xFFB91C1C)
+val CoralRedLight = Color(0xFFFEE2E2)
 
-val AccentPurple = Color(0xFF6366F1)
-val AccentPurpleLight = Color(0xFFEEF2FF)
-val AccentPurpleDarkContainer = Color(0xFF312E81)
+val AccentBlue = BurgundySecondary
+val AccentBlueLight = Color(0xFFF6EEF1)
+val AccentBlueDarkContainer = Color(0xFF461E28)
 
-val AccentOrange = Color(0xFFD97706)
-val AccentOrangeLight = Color(0xFFFFFBEB)
+val AccentMint = Color(0xFF2E6B56)
+val AccentMintLight = Color(0xFFE8F3EE)
+val AccentMintDarkContainer = Color(0xFF153329)
 
-val ChipInactiveBg = Color(0xFFEEF1F6)
-val ChipInactiveText = Color(0xFF64748B)
-val ChipInactiveBgDark = Color(0xFF2C303E)
-val ChipInactiveTextDark = Color(0xFFA6AAB8)
+val AccentPurple = BurgundyPrimary
+val AccentPurpleLight = AccentBurgundyLight
+val AccentPurpleDarkContainer = AccentBurgundyDarkContainer
 
-// Typography - Light (Deep slate charcoal)
-val TextDark = Color(0xFF0F172A)
-val TextMuted = Color(0xFF64748B)
-val TextLight = Color(0xFF94A3B8)
+val AccentOrange = AntiqueGold
+val AccentOrangeLight = AccentGoldLight
 
-// Typography - Dark
-val TextLightHighContrast = Color(0xFFF8FAFC)
-val TextLightMuted = Color(0xFF94A3B8)
+val ChipInactiveBg = Color(0xFFEDE5DC)
+val ChipInactiveText = Color(0xFF6B585E)
+val ChipInactiveBgDark = Color(0xFF332029)
+val ChipInactiveTextDark = Color(0xFFBFAAA2)
+
+// Typography - Light Mode
+val TextDark = Color(0xFF260D17)              // Very deep vintage wine/black
+val TextMuted = Color(0xFF6B555D)             // Warm muted burgundy slate
+val TextLight = Color(0xFF968087)
+
+// Typography - Dark Mode
+val TextLightHighContrast = Color(0xFFFAF4F0) // Warm ivory cream
+val TextLightMuted = Color(0xFFD4C2B8)        // Soft antique parchment
 
 // Progress Bar Colors
-val ProgressTrack = Color(0xFFE2E8F0)
-val ProgressTrackDark = Color(0xFF1E293B)
-val ProgressPurple = Color(0xFF7C3AED)
+val ProgressTrack = Color(0xFFEADBCE)
+val ProgressTrackDark = Color(0xFF3D2631)
+val ProgressPurple = AntiqueGold
 
-// Luxury Borders & Highlights
-val BorderSubtle = Color(0xFFE2E8F0)
-val BorderSoft = Color(0xFFF1F5F9)
+// Heritage Borders & Divider lines
+val BorderSubtle = Color(0xFFE5D7CA)
+val BorderSoft = Color(0xFFF0E5D9)
 
