@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -311,15 +310,15 @@ fun StopwatchScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Action Controls: Reset/Save | Play/Pause | Lap
+            // Action Controls: Reset/Save | Play/Pause
             Row(
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Reset & Save to Room session
                 Box(
                     modifier = Modifier
-                        .size(54.dp)
+                        .size(58.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .clickable {
@@ -352,7 +351,7 @@ fun StopwatchScreen(
                         imageVector = Icons.Default.Stop,
                         contentDescription = "Stop and Save",
                         tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 }
 
@@ -370,7 +369,7 @@ fun StopwatchScreen(
 
                 Box(
                     modifier = Modifier
-                        .size(68.dp)
+                        .size(72.dp)
                         .clip(CircleShape)
                         .background(playButtonBg)
                         .border(1.5.dp, playButtonTint.copy(alpha = 0.35f), CircleShape)
@@ -381,28 +380,7 @@ fun StopwatchScreen(
                         imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isRunning) "Pause" else "Start",
                         tint = playButtonTint,
-                        modifier = Modifier.size(34.dp)
-                    )
-                }
-
-                // Lap Button
-                Box(
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable {
-                            if (isRunning && elapsedSeconds > 0) {
-                                laps.add(0, LapRecord(lapNumber = laps.size + 1, timeFormatted = formattedTime))
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Flag,
-                        contentDescription = "Lap",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
