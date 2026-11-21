@@ -1,5 +1,6 @@
 package com.edutrack.app.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,9 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -109,24 +112,41 @@ fun HomeScreen(
         calculateStudyStreakDays(sessions)
     }
 
-    // Day-wise last 7 days history for fire streak
-    val dayWiseStreakHistory = remember(sessions) {
-        val cal = Calendar.getInstance()
-        val sessionDays = sessions.map { session ->
+    // Day and date horizontal scroll list (past 14 days up to today) with study duration tracking
+    val dailyProgressCircles = remember(sessions) {
+        val dailyMinutesMap = sessions.groupBy { session ->
             val sCal = Calendar.getInstance().apply { timeInMillis = session.date }
             "${sCal.get(Calendar.YEAR)}_${sCal.get(Calendar.DAY_OF_YEAR)}"
-        }.toSet()
+        }.mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
 
-        // 7 days ending today
-        (6 downTo 0).map { dayOffset ->
-            val dayCal = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -dayOffset)
+        val todayCal = Calendar.getInstance()
+        val todayYear = todayCal.get(Calendar.YEAR)
+        val todayDayOfYear = todayCal.get(Calendar.DAY_OF_YEAR)
+
+        // 13 days ago to today (14 days total)
+        (13 downTo 0).map { offset ->
+            val dCal = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -offset)
             }
-            val key = "${dayCal.get(Calendar.YEAR)}_${dayCal.get(Calendar.DAY_OF_YEAR)}"
-            val dayName = dayCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault()) ?: ""
-            val hasStudied = sessionDays.contains(key)
-            val isToday = dayOffset == 0
-            StreakDayStatus(dayLabel = dayName, hasStudied = hasStudied, isToday = isToday)
+            val y = dCal.get(Calendar.YEAR)
+            val doy = dCal.get(Calendar.DAY_OF_YEAR)
+            val key = "${y}_$doy"
+            val dayName = dCal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.getDefault()) ?: ""
+            val dayNumber = dCal.get(Calendar.DAY_OF_MONTH)
+            val totalMinutes = dailyMinutesMap[key] ?: 0
+            val isToday = (y == todayYear && doy == todayDayOfYear)
+
+            // Target baseline e.g. 60 mins = 100% full circle
+            val targetDailyMinutes = 60
+            val fraction = (totalMinutes.toFloat() / targetDailyMinutes).coerceIn(0f, 1f)
+
+            DayCircleProgress(
+                dayLabel = dayName,
+                dayNumber = dayNumber,
+                minutesSpent = totalMinutes,
+                progressFraction = fraction,
+                isToday = isToday
+            )
         }
     }
 
@@ -493,60 +513,92 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        // Day-Wise 7-Day Flame Track (Minimalist, elegant)
-                        Row(
+                        // Date and Day Horizontal Scroll Bar with Circular Ring Completion
+                        LazyRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
                         ) {
-                            dayWiseStreakHistory.forEach { dayStatus ->
+                            items(dailyProgressCircles, key = { "${it.dayLabel}_${it.dayNumber}" }) { dayData ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.width(48.dp)
                                 ) {
+                                    // Day Name (e.g. Mon, Tue)
+                                    Text(
+                                        text = dayData.dayLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = if (dayData.isToday) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (dayData.isToday) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    // Dynamic Ring Circle that thickens/completes by time spent
+                                    val isFullyComplete = dayData.progressFraction >= 1f
+                                    val ringColor = when {
+                                        isFullyComplete -> AccentMint
+                                        dayData.minutesSpent > 0 -> AccentOrange
+                                        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                    }
+
                                     Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                when {
-                                                    dayStatus.hasStudied -> AccentOrange.copy(alpha = 0.16f)
-                                                    dayStatus.isToday -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                                                    else -> Color.Transparent
-                                                }
-                                            )
-                                            .border(
-                                                width = if (dayStatus.isToday) 1.5.dp else 0.dp,
-                                                color = if (dayStatus.isToday) AccentOrange else Color.Transparent,
-                                                shape = CircleShape
-                                            ),
+                                        modifier = Modifier.size(46.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        if (dayStatus.hasStudied) {
-                                            Icon(
-                                                imageVector = Icons.Default.LocalFireDepartment,
-                                                contentDescription = "Active day",
-                                                tint = AccentOrange,
-                                                modifier = Modifier.size(18.dp)
+                                        // Circular Progress Arc
+                                        Canvas(modifier = Modifier.size(44.dp)) {
+                                            // Background track ring
+                                            drawArc(
+                                                color = ringColor.copy(alpha = 0.18f),
+                                                startAngle = -90f,
+                                                sweepAngle = 360f,
+                                                useCenter = false,
+                                                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
                                             )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(5.dp)
-                                                    .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
+
+                                            // Progress filled arc (thicken / complete according to time spent)
+                                            if (dayData.progressFraction > 0f) {
+                                                drawArc(
+                                                    color = ringColor,
+                                                    startAngle = -90f,
+                                                    sweepAngle = 360f * dayData.progressFraction,
+                                                    useCenter = false,
+                                                    style = Stroke(
+                                                        width = if (isFullyComplete) 4.5.dp.toPx() else 3.5.dp.toPx(),
+                                                        cap = StrokeCap.Round
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                        // Center Date Number & Flame icon if studied
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = "${dayData.dayNumber}",
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = if (dayData.isToday) FontWeight.Bold else FontWeight.SemiBold,
+                                                    fontSize = 13.sp,
+                                                    color = if (dayData.isToday) AccentOrange else MaterialTheme.colorScheme.onSurface
+                                                )
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
 
+                                    // Duration label (e.g. 90m, 45m or -)
                                     Text(
-                                        text = dayStatus.dayLabel,
+                                        text = if (dayData.minutesSpent > 0) "${dayData.minutesSpent}m" else "-",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            fontSize = 11.sp,
-                                            fontWeight = if (dayStatus.isToday) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (dayStatus.isToday) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                            fontSize = 10.sp,
+                                            fontWeight = if (dayData.minutesSpent > 0) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (dayData.minutesSpent > 0) ringColor else MaterialTheme.colorScheme.outline
                                         )
                                     )
                                 }
@@ -670,8 +722,10 @@ fun HomeScreen(
     }
 }
 
-data class StreakDayStatus(
+data class DayCircleProgress(
     val dayLabel: String,
-    val hasStudied: Boolean,
+    val dayNumber: Int,
+    val minutesSpent: Int,
+    val progressFraction: Float,
     val isToday: Boolean
 )
