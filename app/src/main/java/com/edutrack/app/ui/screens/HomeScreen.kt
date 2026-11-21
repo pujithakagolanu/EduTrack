@@ -431,81 +431,73 @@ fun HomeScreen(
                 }
             }
 
-            // 5. Day-Wise Fire Streak & Milestone Tracker
-            item(key = "streak_achievements_heading") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = "Streak",
-                            tint = AccentOrange,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Study Streak",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(AccentOrange.copy(alpha = 0.15f))
-                            .padding(horizontal = 12.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "$currentStreak Days 🔥",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = AccentOrange
-                            )
-                        )
-                    }
-                }
-            }
-
-            // Streak Progress Summary Card
+            // 5. Clean & Aesthetic Study Streak Card
             item(key = "streak_summary_card") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp)
+                            .padding(20.dp)
                     ) {
-                        Text(
-                            text = if (currentStreak > 0) "🔥 $currentStreak days consecutive streak!" else "Start your study fire streak today!",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Daily study activity keeps your flame burning bright.",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Day-Wise Fire Streak Row (Weekly 7-day flame history)
+                        // Header with Title & Fire Pill
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Study Streak",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (currentStreak > 0) "$currentStreak consecutive days active" else "Build your daily momentum",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(AccentOrange.copy(alpha = 0.12f))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
+                                    contentDescription = null,
+                                    tint = AccentOrange,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$currentStreak Days",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = AccentOrange
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        // Day-Wise 7-Day Flame Track (Minimalist, elegant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             dayWiseStreakHistory.forEach { dayStatus ->
                                 Column(
@@ -514,11 +506,14 @@ fun HomeScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(34.dp)
                                             .clip(CircleShape)
                                             .background(
-                                                if (dayStatus.hasStudied) AccentOrange.copy(alpha = 0.18f)
-                                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                when {
+                                                    dayStatus.hasStudied -> AccentOrange.copy(alpha = 0.16f)
+                                                    dayStatus.isToday -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                                                    else -> Color.Transparent
+                                                }
                                             )
                                             .border(
                                                 width = if (dayStatus.isToday) 1.5.dp else 0.dp,
@@ -532,14 +527,14 @@ fun HomeScreen(
                                                 imageVector = Icons.Default.LocalFireDepartment,
                                                 contentDescription = "Active day",
                                                 tint = AccentOrange,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         } else {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(6.dp)
+                                                    .size(5.dp)
                                                     .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.outlineVariant)
+                                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f))
                                             )
                                         }
                                     }
@@ -549,6 +544,7 @@ fun HomeScreen(
                                     Text(
                                         text = dayStatus.dayLabel,
                                         style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 11.sp,
                                             fontWeight = if (dayStatus.isToday) FontWeight.Bold else FontWeight.Medium,
                                             color = if (dayStatus.isToday) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -557,78 +553,71 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                        // Milestone Goals (3-Day, 7-Day, 30-Day streak targets)
-                        val streakMilestones = listOf(
-                            Triple("3-Day", 3, Color(0xFFF59E0B)),
-                            Triple("7-Day", 7, Color(0xFF10B981)),
-                            Triple("30-Day", 30, Color(0xFF8B5CF6))
+                        // Clean Aesthetic Target Milestones (3-Day, 7-Day, 30-Day)
+                        val milestones = listOf(
+                            Pair("3-Day", 3),
+                            Pair("7-Day", 7),
+                            Pair("30-Day", 30)
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            streakMilestones.forEach { (label, target, accent) ->
+                            milestones.forEach { (label, target) ->
                                 val isReached = currentStreak >= target
                                 val fraction = (currentStreak.toFloat() / target).coerceIn(0f, 1f)
+                                val milestoneAccent = when (target) {
+                                    3 -> Color(0xFFF59E0B)
+                                    7 -> Color(0xFF10B981)
+                                    else -> Color(0xFF6366F1)
+                                }
 
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (isReached) accent.copy(alpha = 0.12f)
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (isReached) milestoneAccent.copy(alpha = 0.08f)
+                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        )
+                                        .padding(vertical = 10.dp, horizontal = 12.dp)
                                 ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(10.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.LocalFireDepartment,
-                                                contentDescription = null,
-                                                tint = if (isReached) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = label,
-                                                style = MaterialTheme.typography.labelMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isReached) accent else MaterialTheme.colorScheme.onSurface
-                                                )
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-
                                         Text(
-                                            text = if (isReached) "Completed 🔥" else "$currentStreak / $target days",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Medium,
-                                                color = if (isReached) accent else MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isReached) milestoneAccent else MaterialTheme.colorScheme.onSurface
                                             )
                                         )
-
-                                        Spacer(modifier = Modifier.height(6.dp))
-
-                                        LinearProgressIndicator(
-                                            progress = { fraction },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(4.dp)
-                                                .clip(RoundedCornerShape(2.dp)),
-                                            color = accent,
-                                            trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                                            strokeCap = StrokeCap.Round
+                                        Text(
+                                            text = if (isReached) "✓" else "$currentStreak/$target",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isReached) milestoneAccent else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    LinearProgressIndicator(
+                                        progress = { fraction },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(3.dp)
+                                            .clip(RoundedCornerShape(2.dp)),
+                                        color = if (isReached) milestoneAccent else milestoneAccent.copy(alpha = 0.7f),
+                                        trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                        strokeCap = StrokeCap.Round
+                                    )
                                 }
                             }
                         }
