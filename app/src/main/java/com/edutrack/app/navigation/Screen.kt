@@ -61,7 +61,7 @@ sealed class Screen(
     // 5. Archive / History (Recorded study session history & archive)
     data object History : Screen(
         route = "history",
-        title = "Archive",
+        title = "Study History",
         selectedIcon = Icons.Filled.Archive,
         unselectedIcon = Icons.Outlined.Archive
     )
@@ -71,6 +71,19 @@ sealed class Screen(
         title = "Insights",
         selectedIcon = Icons.Filled.Assessment,
         unselectedIcon = Icons.Outlined.Assessment
+    )
+
+    // Secondary Drawer destinations
+    data object SubjectManager : Screen(
+        route = "subject_manager",
+        title = "Subject Manager",
+        selectedIcon = Icons.Filled.Book,
+        unselectedIcon = Icons.Outlined.Book
+    )
+
+    data object Settings : Screen(
+        route = "settings",
+        title = "Settings"
     )
 
     // Sub-screens
@@ -109,6 +122,7 @@ sealed class Screen(
     )
 
     companion object {
-        val bottomNavItems = listOf(Home, Tasks, Stopwatch, Planner, History, Progress)
+        // Exactly five bottom navigation items: Home, Tasks, Timer, Planner, Insights
+        val bottomNavItems = listOf(Home, Tasks, Stopwatch, Planner, Progress)
     }
 }

@@ -43,10 +43,14 @@ class EduTrackApplication : Application() {
         StudyPlanRepositoryImpl(database.studyPlanDao())
     }
 
+    val examRepository: com.edutrack.app.repository.ExamRepository by lazy {
+        com.edutrack.app.repository.ExamRepositoryImpl(database.examDao())
+    }
+
     override fun onCreate() {
         super.onCreate()
 
-        // Seed initial default subjects and study sessions if database is newly initialized
+        // Seed initial default subjects, study sessions, study plans & exams if database is newly initialized
         val appScope = CoroutineScope(Dispatchers.IO)
         appScope.launch {
             val existing = subjectRepository.getAllSubjects().first()
@@ -54,6 +58,7 @@ class EduTrackApplication : Application() {
                 val insertedIds = subjectRepository.insertSubjects(SampleData.initialSubjects)
                 studySessionRepository.insertSessions(SampleData.createInitialSessions())
                 studyPlanRepository.insertPlans(SampleData.createInitialPlans())
+                examRepository.insertExams(SampleData.createInitialExams())
             }
         }
     }

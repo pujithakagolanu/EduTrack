@@ -380,7 +380,7 @@ fun StudySessionCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = if (session.notes.isNotBlank()) session.notes else "Focused Study Session",
+                text = if (session.notes.isNotBlank()) session.notes else "Study Session",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,

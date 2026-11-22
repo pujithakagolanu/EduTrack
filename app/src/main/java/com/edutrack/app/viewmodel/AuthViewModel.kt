@@ -23,9 +23,14 @@ class AuthViewModel(
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn
     val currentUserName: StateFlow<String> = authRepository.currentUserName
     val currentUserEmail: StateFlow<String> = authRepository.currentUserEmail
+    val currentUserRole: StateFlow<String> = authRepository.currentUserRole
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    fun updateProfile(name: String, email: String, role: String) {
+        authRepository.updateProfile(name, email, role)
+    }
 
     fun login(email: String, password: String) {
         viewModelScope.launch {

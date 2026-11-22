@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -66,6 +68,7 @@ import com.edutrack.app.ui.theme.AccentMint
 import com.edutrack.app.ui.theme.AccentOrange
 import com.edutrack.app.ui.theme.AccentPurple
 import com.edutrack.app.ui.theme.BorderSubtle
+import com.edutrack.app.ui.theme.CoralRed
 import com.edutrack.app.ui.theme.ProgressPurple
 import com.edutrack.app.ui.theme.ProgressTrack
 import com.edutrack.app.ui.theme.SmartBg
@@ -82,6 +85,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: StudyTrackerViewModel,
+    studyPlanViewModel: com.edutrack.app.viewmodel.StudyPlanViewModel? = null,
     userName: String = "",
     onNavigateToAddSession: () -> Unit,
     onNavigateToSubjects: () -> Unit,
@@ -99,17 +103,22 @@ fun HomeScreen(
     val todayMinutes by viewModel.todayStudyMinutes.collectAsState()
     val weeklyMinutes by viewModel.weeklyStudyMinutes.collectAsState()
 
+    // Study plans and exams from studyPlanViewModel
+    val allPlans by (studyPlanViewModel?.allPlans ?: kotlinx.coroutines.flow.flowOf(emptyList())).collectAsState(initial = emptyList())
+    val exams by (studyPlanViewModel?.exams ?: kotlinx.coroutines.flow.flowOf(emptyList())).collectAsState(initial = emptyList())
+
     // Formatted current date e.g. "Friday, June 27"
     val dateString = remember {
         SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
     }
 
-    val totalWeeklyHours = weeklyMinutes / 60f
-    val totalWeeklyGoalHours = subjects.sumOf { it.weeklyGoalHours }.coerceAtLeast(0)
-    val overallProgressPercent = if (totalWeeklyGoalHours > 0) {
-        ((totalWeeklyHours / totalWeeklyGoalHours) * 100).toInt().coerceIn(0, 100)
+    // Task completion calculation: completed tasks divided by total tasks
+    val totalTaskCount = allPlans.size
+    val completedTaskCount = allPlans.count { it.isCompleted }
+    val taskCompletionPercent = if (totalTaskCount > 0) {
+        ((completedTaskCount.toFloat() / totalTaskCount) * 100).toInt().coerceIn(0, 100)
     } else 0
-    val overallProgressFraction = (overallProgressPercent / 100f).coerceIn(0f, 1f)
+    val taskCompletionFraction = if (totalTaskCount > 0) (completedTaskCount.toFloat() / totalTaskCount).coerceIn(0f, 1f) else 0f
 
     val currentStreak = remember(sessions) {
         calculateStudyStreakDays(sessions)
@@ -340,11 +349,11 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Left Tile: Today's Tasks
+                    // Left Tile: Total Tasks
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onNavigateToSubjects() },
+                            .clickable { onNavigateToPlanner() },
                         shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -357,13 +366,13 @@ fun HomeScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = "Today's Tasks",
+                                    contentDescription = "Study Tasks",
                                     tint = AccentBlue,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Today's\nTasks",
+                                    text = "Study\nTasks",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.SemiBold,
@@ -373,7 +382,7 @@ fun HomeScreen(
                             }
                             Spacer(modifier = Modifier.height(14.dp))
                             Text(
-                                text = "${subjects.size}",
+                                text = "$completedTaskCount/$totalTaskCount",
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -381,7 +390,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "tasks active",
+                                text = "tasks completed",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Medium
@@ -440,7 +449,7 @@ fun HomeScreen(
                 }
             }
 
-            // 4. Overall Progress Section
+            // 4. Overall Task Completion Progress Section (Fixed: completedTasks / totalTasks)
             item(key = "overall_progress") {
                 Column(
                     modifier = Modifier
@@ -452,13 +461,21 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Overall Progress",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
+                        Column {
+                            Text(
+                                text = "Task Completion",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
                             )
-                        )
+                            Text(
+                                text = "$completedTaskCount of $totalTaskCount study tasks done",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -469,7 +486,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "$overallProgressPercent %",
+                                text = "$taskCompletionPercent %",
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = ProgressPurple
@@ -481,7 +498,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     LinearProgressIndicator(
-                        progress = { overallProgressFraction },
+                        progress = { taskCompletionFraction },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(9.dp)
@@ -490,6 +507,124 @@ fun HomeScreen(
                         trackColor = ProgressTrack,
                         strokeCap = StrokeCap.Round
                     )
+                }
+            }
+
+            // 4b. Exam Countdown Section
+            if (exams.isNotEmpty()) {
+                item(key = "exam_countdown_section") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Alarm,
+                                        contentDescription = "Exam Countdown",
+                                        tint = CoralRed,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Exam Countdown",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                }
+
+                                Text(
+                                    text = "${exams.size} upcoming",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = CoralRed,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            exams.take(3).forEach { exam ->
+                                val daysRemaining = remember(exam.examDateMillis) {
+                                    val diff = exam.examDateMillis - System.currentTimeMillis()
+                                    (diff / (1000 * 60 * 60 * 24)).coerceAtLeast(0)
+                                }
+
+                                val subjectColor = remember(exam.subjectColor) {
+                                    try {
+                                        Color(android.graphics.Color.parseColor(exam.subjectColor))
+                                    } catch (e: Exception) {
+                                        AccentBlue
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = exam.title,
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(subjectColor)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "${exam.subjectName} • ${exam.location}",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(if (daysRemaining <= 7) CoralRed.copy(alpha = 0.15f) else AccentOrange.copy(alpha = 0.15f))
+                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (daysRemaining == 0L) "Today!" else "$daysRemaining days",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (daysRemaining <= 7) CoralRed else AccentOrange
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

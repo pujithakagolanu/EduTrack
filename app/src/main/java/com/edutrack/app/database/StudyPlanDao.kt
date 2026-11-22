@@ -38,7 +38,7 @@ interface StudyPlanDao {
         SELECT 
             p.id, p.title, p.subjectId, s.name AS subjectName, 
             s.colorTag AS subjectColor, p.dateMillis, p.targetMinutes, 
-            p.isCompleted, p.notes
+            p.isCompleted, p.notes, p.priority
         FROM study_plans p
         INNER JOIN subjects s ON p.subjectId = s.id
         ORDER BY p.dateMillis ASC, p.id ASC
@@ -49,7 +49,7 @@ interface StudyPlanDao {
         SELECT 
             p.id, p.title, p.subjectId, s.name AS subjectName, 
             s.colorTag AS subjectColor, p.dateMillis, p.targetMinutes, 
-            p.isCompleted, p.notes
+            p.isCompleted, p.notes, p.priority
         FROM study_plans p
         INNER JOIN subjects s ON p.subjectId = s.id
         WHERE p.dateMillis >= :startOfDay AND p.dateMillis <= :endOfDay
@@ -61,7 +61,7 @@ interface StudyPlanDao {
         SELECT 
             p.id, p.title, p.subjectId, s.name AS subjectName, 
             s.colorTag AS subjectColor, p.dateMillis, p.targetMinutes, 
-            p.isCompleted, p.notes
+            p.isCompleted, p.notes, p.priority
         FROM study_plans p
         INNER JOIN subjects s ON p.subjectId = s.id
         WHERE p.dateMillis >= :fromTimestamp

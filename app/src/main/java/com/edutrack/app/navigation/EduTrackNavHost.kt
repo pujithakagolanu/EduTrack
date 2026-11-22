@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -37,8 +38,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -78,6 +80,7 @@ import com.edutrack.app.ui.screens.PlannerScreen
 import com.edutrack.app.ui.screens.ProfileScreen
 import com.edutrack.app.ui.screens.ProgressScreen
 import com.edutrack.app.ui.screens.SessionDetailScreen
+import com.edutrack.app.ui.screens.SettingsScreen
 import com.edutrack.app.ui.screens.StopwatchScreen
 import com.edutrack.app.ui.screens.SubjectsScreen
 import com.edutrack.app.ui.theme.AccentBlue
@@ -93,7 +96,6 @@ import com.edutrack.app.viewmodel.StudyPlanViewModelFactory
 import com.edutrack.app.viewmodel.StudyTrackerViewModel
 import com.edutrack.app.viewmodel.SubjectViewModel
 import com.edutrack.app.viewmodel.SubjectViewModelFactory
-import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
 @Composable
@@ -117,6 +119,8 @@ fun EduTrackAppContent(
     )
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
     val currentUserName by authViewModel.currentUserName.collectAsState()
+    val currentUserEmail by authViewModel.currentUserEmail.collectAsState()
+    val currentUserRole by authViewModel.currentUserRole.collectAsState()
 
     // Dedicated SubjectViewModel with factory for Subject Manager
     val subjectViewModel: SubjectViewModel = viewModel(
@@ -126,11 +130,12 @@ fun EduTrackAppContent(
         )
     )
 
-    // Dedicated StudyPlanViewModel with factory for Study Planner
+    // Dedicated StudyPlanViewModel with factory for Study Planner & Exam Countdown
     val studyPlanViewModel: StudyPlanViewModel = viewModel(
         factory = StudyPlanViewModelFactory(
             planRepository = application.studyPlanRepository,
-            subjectRepository = application.subjectRepository
+            subjectRepository = application.subjectRepository,
+            examRepository = application.examRepository
         )
     )
 
@@ -185,7 +190,7 @@ fun EduTrackAppContent(
                                 )
                             )
                             Text(
-                                text = if (isLoggedIn) "Student Account" else "Study Progress Tracker",
+                                text = if (isLoggedIn) currentUserRole else "Study Progress Tracker",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -198,7 +203,7 @@ fun EduTrackAppContent(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "MAIN NAVIGATION",
+                        text = "MAIN DESTINATIONS",
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
@@ -207,7 +212,7 @@ fun EduTrackAppContent(
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
 
-                    // Navigation items for drawer
+                    // 5 primary navigation items for drawer
                     Screen.bottomNavItems.forEach { screen ->
                         val isSelected = currentRoute == screen.route
                         NavigationDrawerItem(
@@ -249,7 +254,7 @@ fun EduTrackAppContent(
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurface
                             ),
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = 3.dp)
                         )
                     }
 
@@ -258,37 +263,54 @@ fun EduTrackAppContent(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "QUICK ACTIONS",
+                        text = "STUDY TOOLS & MANAGEMENT",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextMuted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         ),
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
 
+                    // 1. Study History (Formerly Archive)
+                    val isHistorySelected = currentRoute == Screen.History.route
                     NavigationDrawerItem(
-                        label = { Text("Log New Study Session") },
-                        icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
+                        label = { Text("Study History", fontWeight = if (isHistorySelected) FontWeight.Bold else FontWeight.Medium) },
+                        icon = { Icon(Icons.Default.Archive, contentDescription = "Study History") },
+                        selected = isHistorySelected,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.History.route)
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 3.dp)
+                    )
+
+                    // 2. Subject Manager
+                    val isSubjectManagerSelected = currentRoute == Screen.SubjectManager.route
+                    NavigationDrawerItem(
+                        label = { Text("Subject Manager", fontWeight = if (isSubjectManagerSelected) FontWeight.Bold else FontWeight.Medium) },
+                        icon = { Icon(Icons.Default.Book, contentDescription = "Subject Manager") },
+                        selected = isSubjectManagerSelected,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.SubjectManager.route)
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 3.dp)
+                    )
+
+                    // 3. Log New Study Session
+                    NavigationDrawerItem(
+                        label = { Text("Log New Session") },
+                        icon = { Icon(Icons.Default.Add, contentDescription = "Add Session") },
                         selected = false,
                         onClick = {
                             coroutineScope.launch { drawerState.close() }
                             navController.navigate(Screen.AddSession.route)
                         },
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-
-                    NavigationDrawerItem(
-                        label = { Text("Plan Study Activity") },
-                        icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "Plan") },
-                        selected = false,
-                        onClick = {
-                            coroutineScope.launch { drawerState.close() }
-                            navController.navigate(Screen.Planner.route)
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        modifier = Modifier.padding(vertical = 3.dp)
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -296,7 +318,7 @@ fun EduTrackAppContent(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "THEME",
+                        text = "ACCOUNT & SETTINGS",
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
@@ -305,42 +327,12 @@ fun EduTrackAppContent(
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
 
-                    NavigationDrawerItem(
-                        label = { Text(if (isDarkTheme) "Light Mode" else "Dark Mode") },
-                        icon = {
-                            Icon(
-                                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                                contentDescription = "Toggle Theme"
-                            )
-                        },
-                        selected = false,
-                        onClick = {
-                            onToggleDarkTheme()
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "ACCOUNT",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
-                    )
-
-                    // Profile Navigation Item
+                    // 4. Student Profile
                     val isProfileSelected = currentRoute == Screen.Profile.route
                     NavigationDrawerItem(
                         label = {
                             Text(
-                                text = "Profile",
+                                text = "Student Profile",
                                 fontWeight = if (isProfileSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         },
@@ -356,7 +348,48 @@ fun EduTrackAppContent(
                             navController.navigate(Screen.Profile.route)
                         },
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        modifier = Modifier.padding(vertical = 3.dp)
+                    )
+
+                    // 5. Settings
+                    val isSettingsSelected = currentRoute == Screen.Settings.route
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = "Settings",
+                                fontWeight = if (isSettingsSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings"
+                            )
+                        },
+                        selected = isSettingsSelected,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Settings.route)
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 3.dp)
+                    )
+
+                    // 6. Theme Toggle Item
+                    NavigationDrawerItem(
+                        label = { Text(if (isDarkTheme) "Light Mode" else "Dark Mode") },
+                        icon = {
+                            Icon(
+                                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle Theme"
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            onToggleDarkTheme()
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 3.dp)
                     )
 
                     if (isLoggedIn) {
@@ -377,7 +410,7 @@ fun EduTrackAppContent(
                                 }
                             },
                             shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = 3.dp)
                         )
                     } else {
                         NavigationDrawerItem(
@@ -394,7 +427,7 @@ fun EduTrackAppContent(
                                 navController.navigate(Screen.Auth.route)
                             },
                             shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = 3.dp)
                         )
                     }
                 }
@@ -443,6 +476,7 @@ fun EduTrackAppContent(
                 composable(Screen.Home.route) {
                     HomeScreen(
                         viewModel = studyTrackerViewModel,
+                        studyPlanViewModel = studyPlanViewModel,
                         userName = currentUserName,
                         onNavigateToAddSession = { navController.navigate(Screen.AddSession.route) },
                         onNavigateToSubjects = { navController.navigate(Screen.Tasks.route) },
@@ -461,6 +495,15 @@ fun EduTrackAppContent(
                 }
 
                 composable(Screen.Tasks.route) {
+                    SubjectsScreen(
+                        viewModel = subjectViewModel,
+                        onOpenDrawer = {
+                            coroutineScope.launch { drawerState.open() }
+                        }
+                    )
+                }
+
+                composable(Screen.SubjectManager.route) {
                     SubjectsScreen(
                         viewModel = subjectViewModel,
                         onOpenDrawer = {
@@ -506,6 +549,14 @@ fun EduTrackAppContent(
                         onOpenDrawer = {
                             coroutineScope.launch { drawerState.open() }
                         }
+                    )
+                }
+
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        isDarkTheme = isDarkTheme,
+                        onToggleDarkTheme = onToggleDarkTheme,
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 
@@ -651,12 +702,15 @@ fun EduTrackAppContent(
                         ) + fadeOut(animationSpec = tween(280))
                     }
                 ) {
-                    val userEmail by application.userSessionManager.userEmail.collectAsState()
                     ProfileScreen(
                         viewModel = studyTrackerViewModel,
                         userName = currentUserName,
-                        userEmail = userEmail,
+                        userEmail = currentUserEmail,
+                        userRole = currentUserRole,
                         isLoggedIn = isLoggedIn,
+                        onUpdateProfile = { name, email, role ->
+                            authViewModel.updateProfile(name, email, role)
+                        },
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
                         onLogout = {

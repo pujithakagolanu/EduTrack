@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Schedule
@@ -70,6 +71,7 @@ import com.edutrack.app.ui.theme.AccentBlue
 import com.edutrack.app.ui.theme.AccentMint
 import com.edutrack.app.ui.theme.AccentOrange
 import com.edutrack.app.ui.theme.BorderSubtle
+import com.edutrack.app.ui.theme.CoralRed
 import com.edutrack.app.ui.theme.ProgressPurple
 import com.edutrack.app.viewmodel.StudyPlanViewModel
 import java.text.SimpleDateFormat
@@ -127,14 +129,14 @@ fun PlannerScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 1. Header with Menu Button & Title
-            item(key = "planner_header") {
+            // 1. Header with Drawer Menu Button & Title
+            item(key = "planner_top_header") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
@@ -143,12 +145,13 @@ fun PlannerScreen(
                                 .size(42.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surface)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu",
-                                tint = MaterialTheme.colorScheme.onSurface
+                                contentDescription = "Open Drawer Menu",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
 
@@ -159,16 +162,41 @@ fun PlannerScreen(
                                 text = "Study Planner",
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    fontSize = 26.sp
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Plan upcoming study goals",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
+                                text = "Schedule tasks & track completion",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+
+                    // Quick Schedule Shortcut Button
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { showAddDialog = true }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "New Plan",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             )
                         }
@@ -176,8 +204,8 @@ fun PlannerScreen(
                 }
             }
 
-            // 2. Monthly Calendar Card
-            item(key = "monthly_calendar") {
+            // 2. Interactive Calendar Card
+            item(key = "calendar_card") {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -189,7 +217,7 @@ fun PlannerScreen(
                             .fillMaxWidth()
                             .padding(18.dp)
                     ) {
-                        // Month Selector Controls
+                        // Month Header with previous / next navigation buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -211,7 +239,7 @@ fun PlannerScreen(
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = "Previous Month",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 IconButton(
@@ -221,7 +249,7 @@ fun PlannerScreen(
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = "Next Month",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -229,18 +257,17 @@ fun PlannerScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Day of week headers
-                        val daysOfWeek = listOf("S", "M", "T", "W", "T", "F", "S")
+                        // Day of Week Header row (Sun, Mon, ...)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            daysOfWeek.forEach { dayName ->
+                            listOf("S", "M", "T", "W", "T", "F", "S").forEach { dayLabel ->
                                 Text(
-                                    text = dayName,
+                                    text = dayLabel,
                                     modifier = Modifier.weight(1f),
                                     textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.labelMedium.copy(
+                                    style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -293,33 +320,41 @@ fun PlannerScreen(
                 item(key = "selected_day_empty") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(28.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.EventNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.EventNote,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = "No activities planned for this day",
-                                style = MaterialTheme.typography.titleSmall.copy(
+                                style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap the + button to schedule a study session.",
+                                text = "Tap 'New Plan' or the + button below to schedule tasks and assignments.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -367,14 +402,14 @@ fun PlannerScreen(
                 item(key = "upcoming_empty") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -386,7 +421,7 @@ fun PlannerScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "No pending upcoming study tasks.",
+                                text = "No pending upcoming study tasks on your schedule.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -416,8 +451,8 @@ fun PlannerScreen(
             subjects = subjects,
             initialDateMillis = selectedDateMillis,
             onDismiss = { showAddDialog = false },
-            onConfirm = { title, subjectId, dateMillis, targetMinutes, notes ->
-                viewModel.addStudyPlan(title, subjectId, dateMillis, targetMinutes, notes)
+            onConfirm = { title, subjectId, dateMillis, targetMinutes, notes, priority ->
+                viewModel.addStudyPlan(title, subjectId, dateMillis, targetMinutes, notes, priority)
                 showAddDialog = false
             }
         )
@@ -442,41 +477,33 @@ fun CalendarMonthGrid(
         val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
         val days = mutableListOf<CalendarDayItem?>()
-        // Leading empty slots
         for (i in 0 until firstDayOfWeek) {
             days.add(null)
         }
-        // Month days
         for (day in 1..daysInMonth) {
-            val dayCal = Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, month)
-                set(Calendar.DAY_OF_MONTH, day)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            days.add(CalendarDayItem(day = day, timeMillis = dayCal.time.time))
+            cal.set(Calendar.DAY_OF_MONTH, day)
+            days.add(CalendarDayItem(day = day, timeMillis = StudyPlanViewModel.getStartOfDay(cal.timeInMillis)))
         }
         days
     }
 
-    val todayMillis = remember { StudyPlanViewModel.getStartOfDay(System.currentTimeMillis()) }
+    val weeks = remember(calendarDays) {
+        calendarDays.chunked(7)
+    }
+
     val normalizedSelectedMillis = remember(selectedDateMillis) {
         StudyPlanViewModel.getStartOfDay(selectedDateMillis)
     }
 
-    // Render in chunks of 7 days (weeks)
-    val weeks = calendarDays.chunked(7)
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
+    val todayMillis = remember {
+        StudyPlanViewModel.getStartOfDay(System.currentTimeMillis())
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         weeks.forEach { week ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 for (dayIndex in 0 until 7) {
                     val item = week.getOrNull(dayIndex)
@@ -523,7 +550,6 @@ fun CalendarMonthGrid(
                                     )
                                 )
 
-                                // Highlight Dot for Scheduled Activity
                                 if (hasActivity) {
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Box(
@@ -562,13 +588,19 @@ fun StudyPlanCard(
         }
     }
 
+    val priorityColor = when (plan.priority) {
+        "High" -> CoralRed
+        "Low" -> AccentMint
+        else -> AccentOrange
+    }
+
     val formattedDate = remember(plan.dateMillis) {
         SimpleDateFormat("EEE, MMM d", Locale.getDefault()).format(Date(plan.dateMillis))
     }
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (plan.isCompleted) {
                 MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
@@ -600,7 +632,7 @@ fun StudyPlanCard(
             Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Subject badge & Target time
+                // Subject badge & Target time & Priority badge
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -618,6 +650,32 @@ fun StudyPlanCard(
                                 color = tagColor
                             )
                         )
+                    }
+
+                    // Priority Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(priorityColor.copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(priorityColor)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = plan.priority,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = priorityColor,
+                                    fontSize = 10.sp
+                                )
+                            )
+                        }
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -699,13 +757,14 @@ fun AddStudyPlanDialog(
     subjects: List<Subject>,
     initialDateMillis: Long,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, subjectId: Int, dateMillis: Long, targetMinutes: Int, notes: String) -> Unit
+    onConfirm: (title: String, subjectId: Int, dateMillis: Long, targetMinutes: Int, notes: String, priority: String) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var selectedSubjectId by remember {
         mutableIntStateOf(subjects.firstOrNull()?.id ?: 0)
     }
     var targetMinutesText by remember { mutableStateOf("45") }
+    var selectedPriority by remember { mutableStateOf("Medium") }
     var notes by remember { mutableStateOf("") }
     var titleError by remember { mutableStateOf<String?>(null) }
 
@@ -752,7 +811,7 @@ fun AddStudyPlanDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Assign Subject
+                // Assign Subject - Visual Selection Chips
                 Text(
                     text = "Assign Subject",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
@@ -784,17 +843,72 @@ fun AddStudyPlanDialog(
                                     .background(
                                         if (isSelected) tagColor else tagColor.copy(alpha = 0.15f)
                                     )
-                                    .clickable { selectedSubjectId = subject.id }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = subject.name,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else tagColor
+                                    .border(
+                                        width = if (isSelected) 2.dp else 1.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else tagColor.copy(alpha = 0.4f),
+                                        shape = RoundedCornerShape(12.dp)
                                     )
-                                )
+                                    .clickable { selectedSubjectId = subject.id }
+                                    .padding(horizontal = 14.dp, vertical = 9.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                    Text(
+                                        text = subject.name,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) Color.White else tagColor
+                                        )
+                                    )
+                                }
                             }
+                        }
+                    }
+                }
+
+                // Task Priority Selector
+                Text(
+                    text = "Task Priority",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("High" to CoralRed, "Medium" to AccentOrange, "Low" to AccentMint).forEach { (prio, color) ->
+                        val isPrioSelected = selectedPriority == prio
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isPrioSelected) color else color.copy(alpha = 0.12f)
+                                )
+                                .border(
+                                    width = if (isPrioSelected) 1.5.dp else 0.dp,
+                                    color = if (isPrioSelected) color else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { selectedPriority = prio }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = prio,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = if (isPrioSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isPrioSelected) Color.White else color
+                                )
+                            )
                         }
                     }
                 }
@@ -814,7 +928,7 @@ fun AddStudyPlanDialog(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Notes (optional)") },
-                    placeholder = { Text("Key focus points, page numbers, etc.") },
+                    placeholder = { Text("Key focus points, chapter checklist, etc.") },
                     maxLines = 3,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -832,7 +946,7 @@ fun AddStudyPlanDialog(
                         selectedSubjectId = subjects.first().id
                     }
                     val targetMins = targetMinutesText.toIntOrNull() ?: 45
-                    onConfirm(title, selectedSubjectId, initialDateMillis, targetMins, notes)
+                    onConfirm(title, selectedSubjectId, initialDateMillis, targetMins, notes, selectedPriority)
                 }
             ) {
                 Text("Schedule", fontWeight = FontWeight.Bold)

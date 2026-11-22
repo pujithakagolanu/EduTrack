@@ -66,7 +66,7 @@ data class SubjectWithStudyTime(
 )
 
 /**
- * StudyPlan entity for scheduling and planning upcoming study activities:
+ * StudyPlan entity for scheduling and planning upcoming study activities / tasks:
  * - id: Int (Primary Key, auto-generated)
  * - title: String (e.g. "Review Chapter 4 & Quiz")
  * - subjectId: Int (Foreign Key referencing Subject with CASCADE delete)
@@ -74,6 +74,7 @@ data class SubjectWithStudyTime(
  * - targetMinutes: Int (Planned study time duration)
  * - isCompleted: Boolean (Status of completion)
  * - notes: String (Optional details or checklist)
+ * - priority: String ("High", "Medium", "Low")
  */
 @Entity(
     tableName = "study_plans",
@@ -98,7 +99,8 @@ data class StudyPlan(
     val dateMillis: Long,
     val targetMinutes: Int = 45,
     val isCompleted: Boolean = false,
-    val notes: String = ""
+    val notes: String = "",
+    val priority: String = "Medium"
 )
 
 /**
@@ -113,5 +115,51 @@ data class StudyPlanWithSubject(
     val dateMillis: Long,
     val targetMinutes: Int,
     val isCompleted: Boolean,
-    val notes: String
+    val notes: String,
+    val priority: String = "Medium"
+)
+
+/**
+ * Exam entity for Exam Countdown feature:
+ * - id: Int (Primary Key, auto-generated)
+ * - title: String (e.g. "Final Examination")
+ * - subjectId: Int (Foreign Key referencing Subject with CASCADE delete)
+ * - examDateMillis: Long (Epoch ms for scheduled exam date)
+ * - location: String (e.g. "Hall B" or "Online")
+ */
+@Entity(
+    tableName = "exams",
+    foreignKeys = [
+        ForeignKey(
+            entity = Subject::class,
+            parentColumns = ["id"],
+            childColumns = ["subjectId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["subjectId"]),
+        Index(value = ["examDateMillis"])
+    ]
+)
+data class Exam(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val title: String,
+    val subjectId: Int,
+    val examDateMillis: Long,
+    val location: String = ""
+)
+
+/**
+ * Exam with associated Subject details for UI presentation
+ */
+data class ExamWithSubject(
+    val id: Int,
+    val title: String,
+    val subjectId: Int,
+    val subjectName: String,
+    val subjectColor: String,
+    val examDateMillis: Long,
+    val location: String
 )

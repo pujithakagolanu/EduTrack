@@ -9,9 +9,11 @@ interface AuthRepository {
     val isLoggedIn: StateFlow<Boolean>
     val currentUserName: StateFlow<String>
     val currentUserEmail: StateFlow<String>
+    val currentUserRole: StateFlow<String>
 
-    suspend fun register(name: String, email: String, password: String):Result<User>
+    suspend fun register(name: String, email: String, password: String): Result<User>
     suspend fun login(email: String, password: String): Result<User>
+    fun updateProfile(name: String, email: String, role: String)
     fun logout()
 }
 
@@ -23,6 +25,7 @@ class AuthRepositoryImpl(
     override val isLoggedIn: StateFlow<Boolean> = sessionManager.isLoggedIn
     override val currentUserName: StateFlow<String> = sessionManager.userName
     override val currentUserEmail: StateFlow<String> = sessionManager.userEmail
+    override val currentUserRole: StateFlow<String> = sessionManager.userRole
 
     override suspend fun register(name: String, email: String, password: String): Result<User> {
         val trimmedEmail = email.trim().lowercase()
@@ -58,6 +61,10 @@ class AuthRepositoryImpl(
 
         sessionManager.login(name = user.name, email = user.email)
         return Result.success(user)
+    }
+
+    override fun updateProfile(name: String, email: String, role: String) {
+        sessionManager.updateProfile(name, email, role)
     }
 
     override fun logout() {

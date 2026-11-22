@@ -3,9 +3,11 @@ package com.edutrack.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.edutrack.app.model.ExamWithSubject
 import com.edutrack.app.model.StudyPlan
 import com.edutrack.app.model.StudyPlanWithSubject
 import com.edutrack.app.model.Subject
+import com.edutrack.app.repository.ExamRepository
 import com.edutrack.app.repository.StudyPlanRepository
 import com.edutrack.app.repository.SubjectRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,8 @@ import java.util.Calendar
 
 class StudyPlanViewModel(
     private val planRepository: StudyPlanRepository,
-    private val subjectRepository: SubjectRepository
+    private val subjectRepository: SubjectRepository,
+    private val examRepository: ExamRepository? = null
 ) : ViewModel() {
 
     // 1. Current selected calendar day timestamp (start of day)
@@ -36,6 +39,11 @@ class StudyPlanViewModel(
 
     // 4. All study plans with subjects
     val allPlans: StateFlow<List<StudyPlanWithSubject>> = planRepository.getAllPlansWithSubject()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 4b. Exams list for exam countdown
+    val exams: StateFlow<List<ExamWithSubject>> = (examRepository?.getAllExamsWithSubject()
+        ?: kotlinx.coroutines.flow.flowOf(emptyList()))
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // 5. Selected Day Plans
@@ -91,7 +99,8 @@ class StudyPlanViewModel(
         subjectId: Int,
         dateMillis: Long,
         targetMinutes: Int,
-        notes: String = ""
+        notes: String = "",
+        priority: String = "Medium"
     ) {
         viewModelScope.launch {
             planRepository.insertPlan(
@@ -101,9 +110,34 @@ class StudyPlanViewModel(
                     dateMillis = dateMillis,
                     targetMinutes = targetMinutes.coerceAtLeast(5),
                     isCompleted = false,
-                    notes = notes.trim()
+                    notes = notes.trim(),
+                    priority = priority
                 )
             )
+        }
+    }
+
+    fun addExam(
+        title: String,
+        subjectId: Int,
+        examDateMillis: Long,
+        location: String = ""
+    ) {
+        viewModelScope.launch {
+            examRepository?.insertExam(
+                com.edutrack.app.model.Exam(
+                    title = title.trim(),
+                    subjectId = subjectId,
+                    examDateMillis = examDateMillis,
+                    location = location.trim()
+                )
+            )
+        }
+    }
+
+    fun deleteExam(examId: Int) {
+        viewModelScope.launch {
+            examRepository?.deleteExamById(examId)
         }
     }
 
@@ -149,12 +183,13 @@ class StudyPlanViewModel(
 
 class StudyPlanViewModelFactory(
     private val planRepository: StudyPlanRepository,
-    private val subjectRepository: SubjectRepository
+    private val subjectRepository: SubjectRepository,
+    private val examRepository: ExamRepository? = null
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(StudyPlanViewModel::class.java)) {
-            return StudyPlanViewModel(planRepository, subjectRepository) as T
+            return StudyPlanViewModel(planRepository, subjectRepository, examRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }

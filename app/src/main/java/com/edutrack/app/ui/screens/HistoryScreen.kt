@@ -91,7 +91,7 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             EduTrackTopBar(
-                title = "Session History",
+                title = "Study History",
                 subtitle = "${filteredSessions.size} of ${sessions.size} sessions",
                 actions = {
                     IconButton(onClick = onOpenDrawer) {

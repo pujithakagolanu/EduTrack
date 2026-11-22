@@ -87,7 +87,8 @@ object SampleData {
                 dateMillis = getTimeForDayOffset(0, 14),
                 targetMinutes = 60,
                 isCompleted = false,
-                notes = "Implement transition specs and test backstack retention."
+                notes = "Implement transition specs and test backstack retention.",
+                priority = "High"
             ),
             StudyPlan(
                 id = 2,
@@ -96,7 +97,8 @@ object SampleData {
                 dateMillis = getTimeForDayOffset(1, 10),
                 targetMinutes = 90,
                 isCompleted = false,
-                notes = "Solve 0/1 Knapsack and Longest Common Subsequence."
+                notes = "Solve 0/1 Knapsack and Longest Common Subsequence.",
+                priority = "High"
             ),
             StudyPlan(
                 id = 3,
@@ -105,7 +107,8 @@ object SampleData {
                 dateMillis = getTimeForDayOffset(2, 16),
                 targetMinutes = 45,
                 isCompleted = false,
-                notes = "Analyze B-tree vs hash index trade-offs."
+                notes = "Analyze B-tree vs hash index trade-offs.",
+                priority = "Medium"
             ),
             StudyPlan(
                 id = 4,
@@ -114,7 +117,46 @@ object SampleData {
                 dateMillis = getTimeForDayOffset(4, 11),
                 targetMinutes = 50,
                 isCompleted = false,
-                notes = "Review Nielsen Norman group heuristics and color contrast."
+                notes = "Review Nielsen Norman group heuristics and color contrast.",
+                priority = "Low"
+            )
+        )
+    }
+
+    fun createInitialExams(currentTimeMs: Long = System.currentTimeMillis()): List<com.edutrack.app.model.Exam> {
+        fun getExamTime(daysAhead: Int): Long {
+            val c = Calendar.getInstance().apply {
+                timeInMillis = currentTimeMs
+                add(Calendar.DAY_OF_YEAR, daysAhead)
+                set(Calendar.HOUR_OF_DAY, 9)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            return c.timeInMillis
+        }
+
+        return listOf(
+            com.edutrack.app.model.Exam(
+                id = 1,
+                title = "Mobile Architecture Final Exam",
+                subjectId = 1,
+                examDateMillis = getExamTime(12),
+                location = "Lecture Hall 4A"
+            ),
+            com.edutrack.app.model.Exam(
+                id = 2,
+                title = "Algorithms Midterm Assessment",
+                subjectId = 2,
+                examDateMillis = getExamTime(5),
+                location = "Lab Complex 2"
+            ),
+            com.edutrack.app.model.Exam(
+                id = 3,
+                title = "Database Systems Practical",
+                subjectId = 3,
+                examDateMillis = getExamTime(18),
+                location = "Main Campus Hall"
             )
         )
     }
