@@ -103,6 +103,11 @@ sealed class Screen(
         fun createRoute(sessionId: Int) = "edit_session/$sessionId"
     }
 
+    data object Profile : Screen(
+        route = "profile",
+        title = "Profile"
+    )
+
     companion object {
         val bottomNavItems = listOf(Home, Tasks, Stopwatch, Planner, History, Progress)
     }

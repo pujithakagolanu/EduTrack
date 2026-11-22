@@ -75,6 +75,7 @@ import com.edutrack.app.ui.screens.EditSessionScreen
 import com.edutrack.app.ui.screens.HistoryScreen
 import com.edutrack.app.ui.screens.HomeScreen
 import com.edutrack.app.ui.screens.PlannerScreen
+import com.edutrack.app.ui.screens.ProfileScreen
 import com.edutrack.app.ui.screens.ProgressScreen
 import com.edutrack.app.ui.screens.SessionDetailScreen
 import com.edutrack.app.ui.screens.StopwatchScreen
@@ -334,6 +335,30 @@ fun EduTrackAppContent(
                         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
                     )
 
+                    // Profile Navigation Item
+                    val isProfileSelected = currentRoute == Screen.Profile.route
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = "Profile",
+                                fontWeight = if (isProfileSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile"
+                            )
+                        },
+                        selected = isProfileSelected,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Profile.route)
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
                     if (isLoggedIn) {
                         NavigationDrawerItem(
                             label = { Text("Log Out ($currentUserName)") },
@@ -429,6 +454,7 @@ fun EduTrackAppContent(
                         onOpenDrawer = {
                             coroutineScope.launch { drawerState.open() }
                         },
+                        onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                         isDarkTheme = isDarkTheme,
                         onToggleDarkTheme = onToggleDarkTheme
                     )
@@ -598,6 +624,44 @@ fun EduTrackAppContent(
                         authViewModel = authViewModel,
                         onAuthSuccess = {
                             navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(
+                    route = Screen.Profile.route,
+                    enterTransition = {
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(300)
+                        ) + fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(280)
+                        ) + fadeOut(animationSpec = tween(280))
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(280)
+                        ) + fadeOut(animationSpec = tween(280))
+                    }
+                ) {
+                    val userEmail by application.userSessionManager.userEmail.collectAsState()
+                    ProfileScreen(
+                        viewModel = studyTrackerViewModel,
+                        userName = currentUserName,
+                        userEmail = userEmail,
+                        isLoggedIn = isLoggedIn,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
+                        onLogout = {
+                            authViewModel.logout()
+                            navController.navigate(Screen.Auth.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
                             }
                         }
