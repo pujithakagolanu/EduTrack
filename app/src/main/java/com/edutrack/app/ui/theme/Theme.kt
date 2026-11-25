@@ -37,29 +37,30 @@ private val LightColorScheme = lightColorScheme(
     onError = Color(0xFFFFFFFF)
 )
 
+// Option 1: Warm Charcoal & Cashmere Amber
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimaryTeal,                      // Clean luminous teal for clean legibility
-    onPrimary = Color(0xFF091B1E),
-    primaryContainer = Color(0xFF16343A),
-    onPrimaryContainer = Color(0xFFD7EEF2),
-    secondary = DarkWarmAmber,                      // Soft serene teak amber
-    onSecondary = Color(0xFF28190B),
-    secondaryContainer = Color(0xFF382618),
-    onSecondaryContainer = Color(0xFFF5E4D4),
-    tertiary = DarkAccentSage,                      // Silvery calm sage
-    onTertiary = Color(0xFF102123),
-    tertiaryContainer = Color(0xFF1E3539),
-    onTertiaryContainer = Color(0xFFD6E3E3),
-    background = DarkBg,                            // Deep calm obsidian slate #0F1719
-    onBackground = TextLightHighContrast,
-    surface = DarkSurface,                          // #162225 calm surface
+    primary = DarkPrimaryCashmere,                  // Soft cashmere cream #E2C4A2
+    onPrimary = Color(0xFF1F1A14),
+    primaryContainer = Color(0xFF2C241C),
+    onPrimaryContainer = Color(0xFFF2DFCE),
+    secondary = DarkSecondaryAmber,                 // Muted teak amber #C49A74
+    onSecondary = Color(0xFF241910),
+    secondaryContainer = Color(0xFF2E2218),
+    onSecondaryContainer = Color(0xFFEDE0D4),
+    tertiary = DarkAccentWarmTaupe,                 // Gentle tranquil warm taupe
+    onTertiary = Color(0xFF191816),
+    tertiaryContainer = Color(0xFF2B2825),
+    onTertiaryContainer = Color(0xFFE2DDD8),
+    background = DarkBg,                            // Warm charcoal slate #141416
+    onBackground = TextLightHighContrast,           // #EDEDF0
+    surface = DarkSurface,                          // #1E1F24 warm graphite surface
     onSurface = TextLightHighContrast,
-    surfaceVariant = DarkCardBg,                    // #1D2C30 elevated calm card
-    onSurfaceVariant = TextLightMuted,
-    outline = DarkBorderSubtle,
+    surfaceVariant = DarkCardBg,                    // #26282E elevated card
+    onSurfaceVariant = TextLightMuted,              // #9A9DA8
+    outline = DarkBorderSubtle,                     // #2D3039
     outlineVariant = DarkBorderSubtle,
-    error = Color(0xFFF87171),
-    onError = Color(0xFFFFFFFF)
+    error = Color(0xFFE57373),                      // Muted soft coral red (no eye sting)
+    onError = Color(0xFF2A1010)
 )
 
 @Composable
@@ -73,14 +74,11 @@ fun EduTrackTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window
-            window?.let {
-                val statusBarColor = if (darkTheme) DarkBg else LightBg
-                val navBarColor = if (darkTheme) DarkSurface else LightSurface
-                it.statusBarColor = statusBarColor.toArgb()
-                it.navigationBarColor = navBarColor.toArgb()
-                val insetsController = WindowCompat.getInsetsController(it, view)
-                insetsController.isAppearanceLightStatusBars = !darkTheme
-                insetsController.isAppearanceLightNavigationBars = !darkTheme
+            if (window != null) {
+                window.statusBarColor = colorScheme.background.toArgb()
+                window.navigationBarColor = colorScheme.background.toArgb()
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }
@@ -88,7 +86,6 @@ fun EduTrackTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes,
         content = content
     )
 }
